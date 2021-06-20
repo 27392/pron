@@ -110,7 +110,6 @@ public class Main {
                 reader.close();
             }
         } catch (Exception e) {
-            reader = null;
         }
     }
 }
