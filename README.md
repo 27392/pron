@@ -1,6 +1,5 @@
 # simple-91downloader
-Simple implementation of 91porn downloader written by java.
-
+Simple implementation to download video from https://91porn.com written by Java.
 
 # Requirements
 

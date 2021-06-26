@@ -24,6 +24,7 @@ public class Main {
     static {
         System.setProperty(DEFAULT_LOG_LEVEL_KEY, "DEBUG");
     }
+
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     private static final String Video_Url = "" +
@@ -40,10 +41,14 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        Document doc   = getDoc(Video_Url, UA, proxy);
-        String   title = doc.title();
-        logger.info("video: {}", title);
+        Document doc = getDoc(Video_Url, UA, proxy);
+        if (doc.location().contains("404.html")) {
+            logger.info("Video has been deleted.");
+            return;
+        }
 
+        String title = doc.title();
+        logger.info("video: {}", title);
 
         String videoEleStr = doc.select("video > script").html();
         String beginStr    = "strencode2(\"";
@@ -52,11 +57,12 @@ public class Main {
 
         String substring = videoEleStr.substring(begin + beginStr.length(), end);
         logger.debug("substring: {}", substring);
-        String   source = URLDecoder.decode(substring, "UTF-8");
-        logger.debug("source: {}", source);
-        Document parse  = Jsoup.parse(source);
 
-        String m3u8Src = parse.select("source").attr("src");
+        String source = URLDecoder.decode(substring, "UTF-8");
+        logger.debug("source: {}", source);
+
+        Document parse   = Jsoup.parse(source);
+        String   m3u8Src = parse.select("source").attr("src");
         logger.info("m3u8 src: {}", m3u8Src);
 
         outputToMp4(m3u8Src, title);
@@ -106,9 +112,7 @@ public class Main {
 
     private static void closeStream(BufferedReader reader) {
         try {
-            if (reader != null) {
-                reader.close();
-            }
+            if (reader != null) reader.close();
         } catch (Exception e) {
         }
     }
