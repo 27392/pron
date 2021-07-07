@@ -60,9 +60,7 @@ public class Downloader implements Callable<Object> {
 
     private void outputToMp4(String title, String m3u8Url) throws Exception {
         Files.createDirectories(Paths.get(download_dir));
-        String mp4Path = new StringBuilder(download_dir)
-                .append(title)
-                .append(".mp4").toString();
+        String mp4Path = download_dir + title + ".mp4";
         Files.deleteIfExists(Paths.get(mp4Path));
 
         String _cmd = "export all_proxy=%s && ffmpeg -i '%s' -acodec copy -vcodec copy '%s'";

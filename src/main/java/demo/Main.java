@@ -3,7 +3,6 @@ package demo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,22 +31,20 @@ public class Main {
         download();
     }
 
-
     static void download() throws Exception {
         Path            path = Paths.get(ClassLoader.getSystemResource("dl_list.txt").toURI());
         ExecutorService pool = Executors.newCachedThreadPool();
 
-        try (Stream<String> lines = Files.lines(path, Charset.defaultCharset())) {
-
-            List<Downloader> collect = lines.filter(line -> !line.startsWith("#"))
-                    .map(line -> new Downloader(line))
+        try (Stream<String> lines = Files.lines(path)) {
+            List<Downloader> collect = lines
+                    .filter(line -> !line.startsWith("#"))
+                    .distinct()
+                    .map(Downloader::new)
                     .collect(Collectors.toList());
-
             pool.invokeAll(collect);
         } catch (Exception e) {
             logger.error("error", e);
         }
     }
-
 
 }
