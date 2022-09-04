@@ -1,5 +1,6 @@
 package c.core;
 
+import c.Config;
 import c.utils.Pool;
 import c.report.Report;
 import c.utils.HttpHelper;
@@ -26,8 +27,6 @@ public class PageResolve implements Runnable {
 
     private BlockingQueue<ElementWrapper> queue;
 
-    private List<Document> list;
-
     private TypeEnum type;
 
     private String uid;
@@ -47,7 +46,6 @@ public class PageResolve implements Runnable {
     }
 
     public PageResolve(BlockingQueue<ElementWrapper> queue, TypeEnum type, String uid) {
-        this.list = new ArrayList<>();
         this.type = type;
         this.maxPage = 1;
         this.currentPage = new AtomicInteger(0);
@@ -77,7 +75,6 @@ public class PageResolve implements Runnable {
                 TimeUnit.SECONDS.sleep(20);
             }
             document = documentWrapper.getDocument();
-            list.add(document);
         } catch (IOException e) {
             log.error("获取下一页失败", e);
             return null;
@@ -93,7 +90,7 @@ public class PageResolve implements Runnable {
         // 刷新页码
         if (!refreshMaxPage) {
             int maxPageSize      = type.getMaxPageSize(document);
-            int configMaxPageSiz = Integer.parseInt(System.getProperty("maxPage"));
+            int configMaxPageSiz = Config.getMaxPage();
             if (maxPageSize > configMaxPageSiz) {
                 log.warn("页码大于配置最大页码数. 页码: {}, 配置页码: {}", maxPageSize, configMaxPageSiz);
                 this.maxPage = configMaxPageSiz;

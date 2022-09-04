@@ -1,5 +1,6 @@
 package c.utils;
 
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.*;
@@ -8,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author lwh
  */
+@Slf4j
 public class Pool {
 
     private static final ThreadPoolExecutor          threadPoolExecutor;
@@ -33,6 +35,12 @@ public class Pool {
                         Thread thread = new Thread(r);
                         thread.setName("91-" + counter.incrementAndGet());
                         thread.setDaemon(false);
+                        thread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                            @Override
+                            public void uncaughtException(Thread t, Throwable e) {
+                                log.error(e.getMessage(), e);
+                            }
+                        });
                         return thread;
                     }
                 }, new ThreadPoolExecutor.AbortPolicy());

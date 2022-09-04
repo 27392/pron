@@ -1,5 +1,6 @@
 package c.beyond;
 
+import c.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
@@ -7,7 +8,6 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author lwh
@@ -23,11 +23,9 @@ public class Beyond {
 
     static {
         try {
-            try (Stream<String> lines = Files.lines(path)) {
-                map = lines.map(r -> Entry.of(r.split(SEPARATOR)))
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toMap(Entry::getRealUrl, r -> r, (o1, o2) -> o1, LinkedHashMap::new));
-            }
+            map = FileUtils.read(path.toFile(), r -> {
+                return  Entry.of(r.split(SEPARATOR));
+            }, Collectors.toMap(Entry::getRealUrl, r -> r, (o1, o2) -> o1, LinkedHashMap::new));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -62,12 +60,11 @@ public class Beyond {
                 while (true) {
                     TimeUnit.SECONDS.sleep(5);
                     while (!news.isEmpty()) {
-                        try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(path.toFile(), true)))) {
+                        FileUtils.writer(path.toFile(), true, (w) -> {
                             for (int i = 0; i < news.size(); i++) {
-                                Entry entry = news.poll();
-                                writer.println(entry);
+                                w.println(news.poll());
                             }
-                        }
+                        });
                     }
                 }
             } catch (InterruptedException | IOException e) {

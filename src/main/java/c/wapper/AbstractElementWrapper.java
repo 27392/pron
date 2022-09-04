@@ -1,5 +1,6 @@
 package c.wapper;
 
+import c.Config;
 import c.beyond.Beyond;
 import c.beyond.Entry;
 import c.report.Report;
@@ -17,8 +18,8 @@ import java.math.RoundingMode;
 @Slf4j
 public abstract class AbstractElementWrapper implements ElementWrapper {
 
-    private static final int MAX_DURATION = Integer.parseInt(System.getProperty("maxDuration", "20"));
-    private static final int TIMEOUT      = Integer.parseInt(System.getProperty("downloadTimeout"));
+    private static final int MAX_DURATION = Config.getMaxDuration();
+    private static final int TIMEOUT      = Config.getDownloadTimeout();
 
     private static final String DURATION = "export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890 && ffprobe -i '%s' -show_entries format=duration -v quiet -of csv='p=0'";
 

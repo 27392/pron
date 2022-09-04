@@ -1,7 +1,8 @@
 package c.core;
 
+import c.Config;
+import c.cache.VideoCache;
 import c.report.Report;
-import c.utils.IOHelper;
 import c.utils.Pool;
 import c.wapper.ElementWrapper;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +30,7 @@ public class Downloader implements Runnable {
     private static final String MP4 = ".mp4";
 
     static {
-        DOWNLOAD_DIR = Paths.get(System.getProperty("downloadDir"), LocalDate.now().toString());
+        DOWNLOAD_DIR = Paths.get(Config.getDownloadDir(), LocalDate.now().toString());
     }
 
     private final BlockingQueue<ElementWrapper> queue;
@@ -68,7 +69,7 @@ public class Downloader implements Runnable {
                 log.debug("get: {}", title);
 
                 // 存在的话获取路径
-                String path = IOHelper.get(title + ".mp4");
+                String path = VideoCache.get(title);
 
                 if (Objects.nonNull(path)) {
                     Report.downSkip(element.getSourceUrl());

@@ -1,12 +1,12 @@
 package c.utils;
 
+import c.cache.HtmlCache;
 import c.report.Report;
 import c.wapper.DocumentWrapper;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -37,16 +37,16 @@ public class HttpHelper {
     }
 
     public static DocumentWrapper doHttp(String url) throws IOException {
-        String cacheKey = getCacheKey(url);
         for (int i = 0; i < 5; i++) {
             try {
                 DocumentWrapper document = doHttp(url, DEFAULT_PROXY, Duration.ofSeconds(5));
-                boolean equals = document.getDocument().select("title").text().equals("Confirm");
+                boolean         equals   = document.getDocument().select("title").text().equals("Confirm");
                 if (equals) {
                     log.info("重试: {},{}", url, i);
                 } else {
-                    // 缓存
-                    IOHelper.saveHtml(cacheKey, document.getDocument().html());
+                    if (document.getType() == DocumentWrapper.Type.REMOTE) {
+                        HtmlCache.save(url, document.getDocument().html());
+                    }
                     return document;
                 }
             } catch (Exception e) {
@@ -59,15 +59,10 @@ public class HttpHelper {
         throw new RuntimeException("错误");
     }
 
-    public static String getCacheKey(String url) {
-        return url.replace("https://91porn.com/", "");
-    }
-
     public static DocumentWrapper doHttp(String url, Proxy proxy, Duration timeout) throws IOException {
-        String cacheKey = getCacheKey(url);
 
         // 检查缓存
-        String html = IOHelper.readHtml(cacheKey);
+        String html = HtmlCache.get(url);
         if (Objects.nonNull(html) && !"".equals(html)) {
             log.debug("get for cache: {}", url);
             return DocumentWrapper.of(Jsoup.parse(html), DocumentWrapper.Type.CACHE);
