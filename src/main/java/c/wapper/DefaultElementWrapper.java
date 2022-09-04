@@ -1,5 +1,6 @@
 package c.wapper;
 
+import c.beyond.Beyond;
 import c.core.Downloader;
 import c.utils.HttpHelper;
 import lombok.AllArgsConstructor;

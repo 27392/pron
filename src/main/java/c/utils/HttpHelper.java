@@ -68,7 +68,7 @@ public class HttpHelper {
             return DocumentWrapper.of(Jsoup.parse(html), DocumentWrapper.Type.CACHE);
         }
         Report.httpRequest();
-        log.debug("get for http: {}", url);
+        log.info("get for http: {}", url);
 
         try {
             TimeUnit.SECONDS.sleep(3);

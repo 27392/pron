@@ -27,7 +27,9 @@ public class HtmlCache {
     private final Map<String, String> MAPPING = new LinkedHashMap<>();
 
     static {
-        FileUtils.scanFile(CACHE_DIR, f -> f.getName().endsWith(SUFFIX), f -> MAPPING.put(f.getName(), "null"));
+        FileUtils.scanFile(CACHE_DIR, f -> f.getName().endsWith(SUFFIX), f -> {
+            MAPPING.put(f.getParentFile().getName() + ":" + f.getName(), "null");
+        });
         log.info("找到html文件: {}", MAPPING.size());
 
         // 清理缓存
@@ -40,7 +42,7 @@ public class HtmlCache {
         Path path        = CACHE_DIR.resolve(LocalDate.now().toString());
         Path directories = Files.createDirectories(path);
 
-        File file = new File(directories + File.separator + cacheKey + SUFFIX);
+        File file = new File(directories + File.separator + cacheKey.split(":")[1]);
         FileUtils.writer(file, false, content);
     }
 
@@ -51,8 +53,8 @@ public class HtmlCache {
      * @throws IOException
      */
     public static void del(String name) throws IOException {
-        Path path = CACHE_DIR.resolve(LocalDate.now().toString()).resolve(name + SUFFIX);
-        Files.delete(path);
+        Path path = CACHE_DIR.resolve(LocalDate.now().toString()).resolve(getCacheKey(name).split(":")[1]);
+        boolean delete = path.toFile().delete();
     }
 
     /**
@@ -100,7 +102,7 @@ public class HtmlCache {
         String value    = MAPPING.get(cacheKey);
         if (value != null) {
             if (value.equals("null")) {
-                Path   path    = CACHE_DIR.resolve(LocalDate.now().toString()).resolve(cacheKey);
+                Path   path    = CACHE_DIR.resolve(LocalDate.now().toString()).resolve(cacheKey.split(":")[1]);
                 String content = FileUtils.readToString(path.toFile());
                 if (content != null) {
                     MAPPING.put(cacheKey, content);
@@ -118,7 +120,7 @@ public class HtmlCache {
      * @return
      */
     public String getCacheKey(String url) {
-        return url.replace(PREFIX, "") + SUFFIX;
+        return LocalDate.now().toString() + ":" + url.replace(PREFIX, "") + SUFFIX;
     }
 
 }

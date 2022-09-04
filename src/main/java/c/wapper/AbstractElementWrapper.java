@@ -25,17 +25,17 @@ public abstract class AbstractElementWrapper implements ElementWrapper {
 
     @Override
     public Double getDuration() throws Exception {
-        String realUrl   = this.getRealUrl();
         String sourceUrl = this.getSourceUrl();
         String title     = this.getTitle();
         String url       = this.getUrl();
-        Entry  entry     = Beyond.get(realUrl);
+        Entry  entry     = Beyond.get(url);
 
         if (entry != null && entry.getTime() > MAX_DURATION) {
             Report.downTimeBeyond(this.getSourceUrl());
             log.debug("缓存中获取时间超长 {} 分钟: [{}]", entry.getTime(), title);
             return null;
         }
+        String realUrl  = this.getRealUrl();
         double duration = duration(realUrl);
         if (duration > MAX_DURATION) {
             Report.downTimeBeyond(sourceUrl);

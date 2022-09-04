@@ -65,10 +65,8 @@ public class FileUtils {
         if (file == null) {
             return null;
         }
-        String collect = null;
         try (Stream<String> lines = Files.lines(file.toPath())) {
-            collect = lines.collect(Collectors.joining());
-            return decode(collect);
+            return decode(lines.collect(Collectors.joining()));
         } catch (IOException e) {
             e.printStackTrace();
         }

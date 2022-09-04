@@ -1,8 +1,10 @@
 package c.core;
 
 import c.Config;
+import c.cache.HtmlCache;
 import c.cache.VideoCache;
 import c.report.Report;
+import c.utils.FileUtils;
 import c.utils.Pool;
 import c.wapper.ElementWrapper;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +46,6 @@ public class Downloader implements Runnable {
 
         String cmd = String.format(COMMAND, m3u8Url, directories.toString());
 
-
         ProcessBuilder builder = new ProcessBuilder("/bin/sh", "-c", cmd);
         Process        p       = builder.start();
         int            i       = p.waitFor();
@@ -77,15 +78,17 @@ public class Downloader implements Runnable {
                     continue;
                 }
                 String url      = element.getUrl();
-                String m3u8Src  = element.getRealUrl();
                 Double duration = element.getDuration();
                 if (duration == null) {
+                    HtmlCache.del(url);
                     continue;
                 }
+
                 long start   = System.currentTimeMillis();
                 long timeout = element.timeout();
                 log.info("开始下载: [超时: {} / 总时长: {}], 名称: [{}], 来源: [{}], 地址: [{}]", timeout, duration, title, element.getSourceUrl(), url);
 
+                String m3u8Src = element.getRealUrl();
                 FutureTask<Integer> integerFutureTask = new FutureTask<>(() -> outputToMp4(title, m3u8Src));
                 Thread              thread            = new Thread(integerFutureTask, "down-");
                 thread.start();
@@ -95,6 +98,7 @@ public class Downloader implements Runnable {
                     if (i == 0) {
                         log.info("下载完成: 耗时: [{}], 名称: [{}]", ((System.currentTimeMillis() - start) / 1000d) / 60d, title);
                         Report.downSuccess(element.getSourceUrl());
+                        HtmlCache.del(url);
                     } else {
                         deleteFile(title);
                         log.error("下载失败: 耗时: [{}], 名称 [{}], 地址: [{}]", ((System.currentTimeMillis() - start) / 1000d) / 60d, title, url);
