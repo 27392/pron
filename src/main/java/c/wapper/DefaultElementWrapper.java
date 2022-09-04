@@ -114,7 +114,7 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
                 text = "00:00" + text;
             }
             LocalTime parse = LocalTime.parse(text);
-            return parse.getMinute();
+            return Math.min(parse.getMinute(), 1);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return super.duration(m3u8Url);

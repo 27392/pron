@@ -89,8 +89,8 @@ public class PageResolve implements Runnable {
     private void refreshPageNum() {
         // 刷新页码
         if (!refreshMaxPage) {
-            int maxPageSize      = type.getMaxPageSize(document);
             int configMaxPageSiz = Config.getMaxPage();
+            int maxPageSize      = type.getMaxPageSize(document);
             if (maxPageSize > configMaxPageSiz) {
                 log.warn("页码大于配置最大页码数. 页码: {}, 配置页码: {}", maxPageSize, configMaxPageSiz);
                 this.maxPage = configMaxPageSiz;

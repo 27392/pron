@@ -52,9 +52,9 @@ public class HtmlCache {
      * @param name
      * @throws IOException
      */
-    public static void del(String name) throws IOException {
+    public static boolean delete(String name) throws IOException {
         Path path = CACHE_DIR.resolve(LocalDate.now().toString()).resolve(getCacheKey(name).split(":")[1]);
-        boolean delete = path.toFile().delete();
+        return path.toFile().delete();
     }
 
     /**

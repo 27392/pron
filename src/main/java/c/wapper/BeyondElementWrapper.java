@@ -53,7 +53,7 @@ public class BeyondElementWrapper extends AbstractElementWrapper {
     }
 
     @Override
-    public Double getDuration() throws Exception {
+    public Double getDuration() {
         return entry.getTime();
     }
 }

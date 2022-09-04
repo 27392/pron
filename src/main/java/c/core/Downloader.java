@@ -4,7 +4,6 @@ import c.Config;
 import c.cache.HtmlCache;
 import c.cache.VideoCache;
 import c.report.Report;
-import c.utils.FileUtils;
 import c.utils.Pool;
 import c.wapper.ElementWrapper;
 import lombok.extern.slf4j.Slf4j;
@@ -80,7 +79,7 @@ public class Downloader implements Runnable {
                 String url      = element.getUrl();
                 Double duration = element.getDuration();
                 if (duration == null) {
-                    HtmlCache.del(url);
+                    HtmlCache.delete(url);
                     continue;
                 }
 
@@ -88,7 +87,7 @@ public class Downloader implements Runnable {
                 long timeout = element.timeout();
                 log.info("开始下载: [超时: {} / 总时长: {}], 名称: [{}], 来源: [{}], 地址: [{}]", timeout, duration, title, element.getSourceUrl(), url);
 
-                String m3u8Src = element.getRealUrl();
+                String              m3u8Src           = element.getRealUrl();
                 FutureTask<Integer> integerFutureTask = new FutureTask<>(() -> outputToMp4(title, m3u8Src));
                 Thread              thread            = new Thread(integerFutureTask, "down-");
                 thread.start();
@@ -96,21 +95,22 @@ public class Downloader implements Runnable {
                 try {
                     Integer i = integerFutureTask.get(element.timeout(), TimeUnit.MINUTES);
                     if (i == 0) {
-                        log.info("下载完成: 耗时: [{}], 名称: [{}]", ((System.currentTimeMillis() - start) / 1000d) / 60d, title);
+                        log.info("下载完成: 耗时: [{}], 名称: [{}], 地址: [{}]", watch(start), title, url);
                         Report.downSuccess(element.getSourceUrl());
-                        HtmlCache.del(url);
                     } else {
-                        deleteFile(title);
-                        log.error("下载失败: 耗时: [{}], 名称 [{}], 地址: [{}]", ((System.currentTimeMillis() - start) / 1000d) / 60d, title, url);
+                        log.error("下载失败: 耗时: [{}], 名称 [{}], 地址: [{}]", watch(start), title, url);
                         Report.downFail(element.getSourceUrl());
+                        VideoCache.delete(title);
                     }
+                    HtmlCache.delete(url);
                 } catch (ExecutionException e) {
                     log.error("下载失败, 再次放入队列", e);
                     queue.add(element);
                 } catch (TimeoutException e) {
                     Report.downTimeout(element.getSourceUrl());
-                    boolean delete = deleteFile(title);
-                    log.error("下载超时删除: 耗时: [{}], 是否删除成功: {}, 名称: [{}]", ((System.currentTimeMillis() - start) / 1000d) / 60d, delete, title);
+                    VideoCache.delete(title);
+                    HtmlCache.delete(url);
+                    log.error("下载超时删除: 耗时: [{}], 名称: [{}], 地址: [{}]", watch(start), title, url);
                 }
             }
         } catch (IOException e) {
@@ -126,42 +126,10 @@ public class Downloader implements Runnable {
         Pool.finish();
     }
 
-    private boolean deleteFile(String title) throws IOException {
-        Path resolve = Files.createDirectories(DOWNLOAD_DIR).resolve(title + MP4);
-        return resolve.toFile().delete();
+    private String watch(long start) {
+        double d = ((System.currentTimeMillis() - start) / 1000d) / 60d;
+        return String.format("%.2f", d);
+
     }
 
-//    @SneakyThrows
-//    public static void main(String[] args) throws IOException, ScriptException {
-
-//        // 964.866650
-//        // 00:16:04.87
-//        ProcessBuilder processBuilder = new ProcessBuilder("/bin/sh", "-c", "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 'https://la.killcovid2021.com/m3u8/612895/612895.m3u8'");
-//
-//        Process process = processBuilder.start();
-//
-//        BufferedReader reader =
-//                new BufferedReader(new InputStreamReader(process.getInputStream()));
-//        String line;
-//        while ((line = reader.readLine()) != null) {
-//            System.out.println(line);
-//        }
-
-//        ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
-//        ScriptEngine        scriptEngine                  = scriptEngineManager.getEngineByName("js");
-//        scriptEngine.eval(new InputStreamReader(Downloader.class.getClassLoader().getResourceAsStream("m.js")));
-//
-//        Invocable inv2 = (Invocable) scriptEngine;
-//        // strencode("MXgvEFcTGkFqYQkJAToBdGFaGGElIRpLDjtQACxiCgUJURUcdxUuPn8zLiY4S3wEClFHTSkzJTEbUhxyeDQAawA/IAEofx5XDQRAPipYJFknGy5xMhEMJgM2HjJSDXVcESY7Wl0GDUYDDwp/HHwBRREkBgEZJlwGIDZ8VA==","a0af3KP+02KsbWLM+hpQAiX1ARhvuPXpG+vi8AhI1wESayEpFcw7MgBGU8IG6pgYLEy0g+OcCmuJgkqmmblAWINJSezZ1E7/pqu29A","MXgvEFcTGkFqYQkJAToBdGFaGGElIRpLDjtQACxiCgUJURUcdxUuPn8zLiY4S3wEClFHTSkzJTEbUhxyeDQAawA/IAEofx5XDQRAPipYJFknGy5xMhEMJgM2HjJSDXVcESY7Wl0GDUYDDwp/HHwBRREkBgEZJlwGIDZ8VA==1"
-//        Object strencode = inv2.invokeFunction("strencode", "MXgvEFcTGkFqYQkJAToBdGFaGGElIRpLDjtQACxiCgUJURUcdxUuPn8zLiY4S3wEClFHTSkzJTEbUhxyeDQAawA/IAEofx5XDQRAPipYJFknGy5xMhEMJgM2HjJSDXVcESY7Wl0GDUYDDwp/HHwBRREkBgEZJlwGIDZ8VA==\",\"a0af3KP+02KsbWLM+hpQAiX1ARhvuPXpG+vi8AhI1wESayEpFcw7MgBGU8IG6pgYLEy0g+OcCmuJgkqmmblAWINJSezZ1E7/pqu29A\",\"MXgvEFcTGkFqYQkJAToBdGFaGGElIRpLDjtQACxiCgUJURUcdxUuPn8zLiY4S3wEClFHTSkzJTEbUhxyeDQAawA/IAEofx5XDQRAPipYJFknGy5xMhEMJgM2HjJSDXVcESY7Wl0GDUYDDwp/HHwBRREkBgEZJlwGIDZ8VA==1");
-//
-//        System.out.println(strencode);
-
-//        System.setProperty("webdriver.chrome.driver", "/Users/liwenhao/Downloads/chromedriver");
-
-
-//        collect += "return strencode(\"MXgvEFcTGkFqYQkJAToBdGFaGGElIRpLDjtQACxiCgUJURUcdxUuPn8zLiY4S3wEClFHTSkzJTEbUhxyeDQAawA/IAEofx5XDQRAPipYJFknGy5xMhEMJgM2HjJSDXVcESY7Wl0GDUYDDwp/HHwBRREkBgEZJlwGIDZ8VA==\",\"a0af3KP+02KsbWLM+hpQAiX1ARhvuPXpG+vi8AhI1wESayEpFcw7MgBGU8IG6pgYLEy0g+OcCmuJgkqmmblAWINJSezZ1E7/pqu29A\",\"MXgvEFcTGkFqYQkJAToBdGFaGGElIRpLDjtQACxiCgUJURUcdxUuPn8zLiY4S3wEClFHTSkzJTEbUhxyeDQAawA/IAEofx5XDQRAPipYJFknGy5xMhEMJgM2HjJSDXVcESY7Wl0GDUYDDwp/HHwBRREkBgEZJlwGIDZ8VA==1\")";
-//        System.out.println(executor.executeScript(collect));
-
-//    }
 }

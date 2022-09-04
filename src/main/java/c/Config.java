@@ -40,7 +40,7 @@ public class Config {
     }
 
     public String getWebDriver() {
-        return System.getProperty("webdriver");
+        return PROPERTIES.getProperty("webdriver");
     }
 
     public int getCleanHtmlCache() {
