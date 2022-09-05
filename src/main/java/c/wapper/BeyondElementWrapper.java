@@ -5,6 +5,8 @@ import c.utils.Pool;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.nodes.Element;
 
+import java.time.LocalDate;
+
 /**
  * @author lwh
  */
@@ -55,5 +57,10 @@ public class BeyondElementWrapper extends AbstractElementWrapper {
     @Override
     public Double getDuration() {
         return entry.getTime();
+    }
+
+    @Override
+    public LocalDate getReleaseDate() {
+        return entry.getReleaseDate();
     }
 }

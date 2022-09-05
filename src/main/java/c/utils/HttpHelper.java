@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -44,9 +45,6 @@ public class HttpHelper {
                 if (equals) {
                     log.info("重试: {},{}", url, i);
                 } else {
-                    if (document.getType() == DocumentWrapper.Type.REMOTE) {
-                        HtmlCache.save(url, document.getDocument().html());
-                    }
                     return document;
                 }
             } catch (Exception e) {
@@ -68,7 +66,7 @@ public class HttpHelper {
             return DocumentWrapper.of(Jsoup.parse(html), DocumentWrapper.Type.CACHE);
         }
         Report.httpRequest();
-        log.info("get for http: {}", url);
+        log.debug("get for http: {}", url);
 
         try {
             TimeUnit.SECONDS.sleep(3);
@@ -104,11 +102,15 @@ public class HttpHelper {
         Response response = httpClient.newCall(req).execute();
 
         if (response.isSuccessful()) {
-            ResponseBody body = response.body();
-            String       text = new String(body.bytes());
-            return DocumentWrapper.of(Jsoup.parse(text), DocumentWrapper.Type.REMOTE);
+            ResponseBody body     = response.body();
+            String       text     = new String(body.bytes());
+            Document     document = Jsoup.parse(text);
+
+            // 缓存
+            HtmlCache.save(url, document.html());
+            return DocumentWrapper.of(document, DocumentWrapper.Type.REMOTE);
         } else {
-            throw new RuntimeException("code: " + response.code());
+            throw new RuntimeException("url: " + url + ", code: " + response.code());
         }
     }
 

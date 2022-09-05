@@ -22,15 +22,19 @@ public class VideoCache {
 
     private final Map<String, String> MAPPING = new LinkedHashMap<>();
 
-    private final Path CACHE_DIR = Paths.get(Config.getDownloadDir());
+    public final Path CACHE_DIR = Paths.get(Config.getDownloadDir()).resolve("video");
 
     static {
-        FileUtils.scanFile(CACHE_DIR, f -> f.getName().endsWith(SUFFIX), f -> MAPPING.put(f.getName(), f.getAbsolutePath()));
+        FileUtils.scanFile(CACHE_DIR, f -> f.getName().endsWith(SUFFIX), f -> {
+            String[] split = f.getName().split(" - ");
+            MAPPING.put(split[1], f.getAbsolutePath());
+        });
         log.info("找到视频文件: {}", MAPPING.size());
     }
 
     public String get(String name) {
-        return MAPPING.get(name + SUFFIX);
+        String[] split = name.split(" - ");
+        return MAPPING.get(split[1] + SUFFIX);
     }
 
     public boolean delete(String title) throws IOException {

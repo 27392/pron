@@ -1,6 +1,5 @@
 package c.wapper;
 
-import c.beyond.Beyond;
 import c.core.Downloader;
 import c.utils.HttpHelper;
 import lombok.AllArgsConstructor;
@@ -18,6 +17,8 @@ import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,7 +34,10 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
 
     private static final Pattern ENCODE_STR_REGEX = Pattern.compile("strencode.+\\((.+?)\\)");
     private static final Pattern URL_REGEX        = Pattern.compile("src='((.+?)(\\.m3u8))'");
-    private static final String  script;
+    private static final Pattern DATE_REGEX       = Pattern.compile("(([0-9+]+) (小时|天))");
+    private static final Pattern ID_REGEX         = Pattern.compile("viewkey=(\\w+)");
+
+    private static final String script;
 
     private final Element element;
     private final String  sourceUrl;
@@ -66,10 +70,24 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
 
     @Override
     public String getTitle() {
-        return element.select(".video-title").html()
+        String trim = element.select(".video-title").html()
                 .replace("[原创]", "")
                 .replaceAll("/", "")
+                .replaceAll(" - ", "")
                 .trim();
+        String s = regexMatch(ID_REGEX, getUrl());
+        return trim + " - " + s;
+    }
+
+    @Override
+    public LocalDate getReleaseDate() {
+        try {
+            DocumentWrapper documentWrapper = HttpHelper.doHttp(getUrl());
+            String          text            = documentWrapper.getDocument().select(".title-yakov").first().text();
+            return LocalDate.parse(text);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

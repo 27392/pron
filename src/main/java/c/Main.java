@@ -13,10 +13,11 @@ import java.util.concurrent.ArrayBlockingQueue;
 @Slf4j
 public class Main {
 
-    static final TypeEnum typeEnum = TypeEnum.CURRENT_HOT;
-
     public static void main(String[] args) throws InterruptedException, URISyntaxException, IOException {
-        typeEnum.start(new ArrayBlockingQueue<>(((4 * 6) * 3)), 5);
+        TypeEnum type = Config.getType();
+        log.info("{}", type);
+
+        type.start(new ArrayBlockingQueue<>(((4 * 6) * 3)), Config.getDownCount());
     }
 
 }

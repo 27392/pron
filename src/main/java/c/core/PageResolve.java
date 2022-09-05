@@ -109,6 +109,7 @@ public class PageResolve implements Runnable {
 
     @Override
     public void run() {
+        log.info("开始");
         try {
             Document doc;
             while ((doc = nextPage()) != null) {

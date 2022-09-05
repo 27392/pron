@@ -1,10 +1,12 @@
 package c.beyond;
 
+import c.Config;
 import c.utils.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.nio.file.*;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -19,7 +21,7 @@ public class Beyond {
     private static final Queue<Entry>       news      = new LinkedList<>();
     private static       Map<String, Entry> map;
 
-    private static final Path path = Paths.get("beyond");
+    private static final Path path = Paths.get(Config.getDownloadDir()).resolve("beyond.txt");
 
     static {
         try {
@@ -34,8 +36,8 @@ public class Beyond {
         thread.start();
     }
 
-    public static void add(double time, String url, String realUrl, String title) {
-        Entry entry = new Entry(title, time, url, realUrl);
+    public static void add(LocalDate releaseDate, double time, String url, String realUrl, String title) {
+        Entry entry = new Entry(title, releaseDate, time, url, realUrl);
         Entry put   = map.put(url, entry);
         if (put == null) {
             news.add(entry);

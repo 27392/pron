@@ -1,7 +1,6 @@
 package c.core;
 
 import c.Config;
-import c.cache.HtmlCache;
 import c.cache.VideoCache;
 import c.report.Report;
 import c.utils.Pool;
@@ -11,9 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.util.Objects;
 import java.util.concurrent.*;
 
 /**
@@ -24,15 +21,9 @@ import java.util.concurrent.*;
 @Slf4j
 public class Downloader implements Runnable {
 
-    private static final Path DOWNLOAD_DIR;
-
     private static final String COMMAND = "export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890 && ffmpeg -y -i '%s' -acodec copy -vcodec copy '%s'";
 
     private static final String MP4 = ".mp4";
-
-    static {
-        DOWNLOAD_DIR = Paths.get(Config.getDownloadDir(), LocalDate.now().toString());
-    }
 
     private final BlockingQueue<ElementWrapper> queue;
 
@@ -40,8 +31,9 @@ public class Downloader implements Runnable {
         this.queue = queue;
     }
 
-    private int outputToMp4(String title, String m3u8Url) throws InterruptedException, IOException {
-        Path directories = Files.createDirectories(DOWNLOAD_DIR).resolve(title + MP4);
+    private int outputToMp4(Path dir, String title, String m3u8Url) throws InterruptedException, IOException {
+
+        Path directories = Files.createDirectories(dir).resolve(title + MP4);
 
         String cmd = String.format(COMMAND, m3u8Url, directories.toString());
 
@@ -57,6 +49,8 @@ public class Downloader implements Runnable {
 
     @Override
     public void run() {
+        log.info("开始");
+
         ElementWrapper element = null;
         try {
             while (true) {
@@ -64,52 +58,54 @@ public class Downloader implements Runnable {
                 if (element == null) {
                     break;
                 }
-                // 标题
+
                 String title = element.getTitle();
                 log.debug("get: {}", title);
 
-                // 存在的话获取路径
-                String path = VideoCache.get(title);
-
-                if (Objects.nonNull(path)) {
+                if (element.exist()) {
                     Report.downSkip(element.getSourceUrl());
-                    log.debug("跳过: {}, {}", title, path);
+                    log.debug("跳过: {}", title);
                     continue;
                 }
-                String url      = element.getUrl();
                 Double duration = element.getDuration();
                 if (duration == null) {
-                    HtmlCache.delete(url);
                     continue;
                 }
 
-                long start   = System.currentTimeMillis();
+                String    url         = element.getUrl();
+                LocalDate releaseDate = element.getReleaseDate();
+                if (Config.getLastTime().isAfter(releaseDate)) {
+                    log.debug("时间超出: 发布时间: [{}], 规定时间: [{}], 名称: [{}], 来源: [{}], 地址: [{}]", releaseDate, Config.getLastTime(), title, element.getSourceUrl(), url);
+                    Report.downSkip(element.getSourceUrl());
+                    continue;
+                }
+
+                Path path    = element.downDir();
                 long timeout = element.timeout();
-                log.info("开始下载: [超时: {} / 总时长: {}], 名称: [{}], 来源: [{}], 地址: [{}]", timeout, duration, title, element.getSourceUrl(), url);
+                long start   = System.currentTimeMillis();
+                log.info("开始下载: 发布时间: [{}], [超时: {} / 总时长: {}], 名称: [{}], 来源: [{}], 地址: [{}]", releaseDate, timeout, duration, title, element.getSourceUrl(), url);
 
                 String              m3u8Src           = element.getRealUrl();
-                FutureTask<Integer> integerFutureTask = new FutureTask<>(() -> outputToMp4(title, m3u8Src));
+                FutureTask<Integer> integerFutureTask = new FutureTask<>(() -> outputToMp4(path, title, m3u8Src));
                 Thread              thread            = new Thread(integerFutureTask, "down-");
                 thread.start();
 
                 try {
                     Integer i = integerFutureTask.get(element.timeout(), TimeUnit.MINUTES);
                     if (i == 0) {
-                        log.info("下载完成: 耗时: [{}], 名称: [{}], 地址: [{}]", watch(start), title, url);
+                        log.info("下载完成: 耗时: [{}], 发布时间: [{}], 名称: [{}], 地址: [{}]", watch(start), releaseDate, title, url);
                         Report.downSuccess(element.getSourceUrl());
                     } else {
-                        log.error("下载失败: 耗时: [{}], 名称 [{}], 地址: [{}]", watch(start), title, url);
+                        log.error("下载失败: 耗时: [{}], 发布时间: [{}], 名称 [{}], 地址: [{}]", watch(start), releaseDate, title, url);
                         Report.downFail(element.getSourceUrl());
                         VideoCache.delete(title);
                     }
-                    HtmlCache.delete(url);
                 } catch (ExecutionException e) {
                     log.error("下载失败, 再次放入队列", e);
                     queue.add(element);
                 } catch (TimeoutException e) {
                     Report.downTimeout(element.getSourceUrl());
                     VideoCache.delete(title);
-                    HtmlCache.delete(url);
                     log.error("下载超时删除: 耗时: [{}], 名称: [{}], 地址: [{}]", watch(start), title, url);
                 }
             }

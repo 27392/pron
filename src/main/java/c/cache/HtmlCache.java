@@ -2,8 +2,14 @@ package c.cache;
 
 import c.Config;
 import c.utils.FileUtils;
+import c.utils.HttpHelper;
+import c.wapper.DocumentWrapper;
+import lombok.AllArgsConstructor;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.select.Elements;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -11,6 +17,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author lwh
@@ -22,71 +30,74 @@ public class HtmlCache {
     public final String SUFFIX = ".html";
     public final String PREFIX = "https://91porn.com/";
 
-    private final Path CACHE_DIR = Paths.get("cache");
+    private static final Pattern ID_REGEX = Pattern.compile("viewkey=(\\w+)");
 
-    private final Map<String, String> MAPPING = new LinkedHashMap<>();
+    private final Path CACHE_DIR = Paths.get(Config.getDownloadDir()).resolve("html");
+
+    private final Map<String, Value> MAPPING = new LinkedHashMap<>();
 
     static {
-        FileUtils.scanFile(CACHE_DIR, f -> f.getName().endsWith(SUFFIX), f -> {
-            MAPPING.put(f.getParentFile().getName() + ":" + f.getName(), "null");
-        });
+
+        FileUtils.scanFile(CACHE_DIR, f -> f.getName().endsWith(SUFFIX), f -> MAPPING.put(f.getName(), new Value(f, null)));
         log.info("找到html文件: {}", MAPPING.size());
 
         // 清理缓存
-        clear(Config.getCleanHtmlCache());
+        clear(Config.getMaxHtmlCache());
     }
 
     public void save(String name, String content) throws IOException {
         String cacheKey = getCacheKey(name);
 
-        Path path        = CACHE_DIR.resolve(LocalDate.now().toString());
+        Path path        = CACHE_DIR.resolve(dir(content).toString());
         Path directories = Files.createDirectories(path);
 
-        File file = new File(directories + File.separator + cacheKey.split(":")[1]);
+        File file = new File(directories + File.separator + cacheKey);
         FileUtils.writer(file, false, content);
-    }
 
-    /**
-     * 删除文件
-     *
-     * @param name
-     * @throws IOException
-     */
-    public static boolean delete(String name) throws IOException {
-        Path path = CACHE_DIR.resolve(LocalDate.now().toString()).resolve(getCacheKey(name).split(":")[1]);
-        return path.toFile().delete();
+        MAPPING.put(cacheKey, new Value(file, content));
     }
 
     /**
      * 清除缓存
      *
-     * @param month
+     * @param count
      */
-    public void clear(int month) {
-        LocalDate localDate = LocalDate.now().minusMonths(month);
-        File[]    files     = CACHE_DIR.toFile().listFiles();
+    public void clear(int count) {
+        if (count <= 0) {
+            return;
+        }
+        if (MAPPING.size() <= count) {
+            return;
+        }
+        File[] files = FileUtils.getFilesBySortCreate(CACHE_DIR.toFile());
         if (Objects.isNull(files) || files.length == 0) {
             return;
         }
 
+        int removeCount = MAPPING.size() - count;
+        int delCount    = 0;
         for (File file : files) {
-            if (!file.isDirectory()) {
-                continue;
-            }
-            LocalDate dir;
-            try {
-                dir = LocalDate.parse(file.getName());
-            } catch (RuntimeException e) {
-                log.error(e.getMessage(), e);
-                return;
-            }
-            if (dir.isBefore(localDate)) {
-                Optional.ofNullable(file.listFiles()).ifPresent(r -> {
-                    Arrays.stream(r).forEach(e -> {
-//                        boolean delete = e.delete();
-                        log.info("cache: {}, delete: {}", e.getName(), false);
-                    });
-                });
+            File[] fs = FileUtils.getFilesBySortCreate(file);
+            if (file.isDirectory() && (fs != null && fs.length != 0)) {
+                int c = 0;
+                for (File f : fs) {
+                    if (delCount >= removeCount) {
+                        log.info("cache: 删除数量: {}", delCount);
+                        return;
+                    }
+                    boolean delete = f.delete();
+                    if (delete) {
+                        MAPPING.remove(f.getName());
+                    }
+                    log.info("cache: {}, delete: {}", f.getName(), delete);
+
+                    delCount++;
+                    c++;
+                }
+                if (c == fs.length) {
+                    boolean delete = file.delete();
+                    log.info("cache: {}, delete: {}", file.getName(), delete);
+                }
             }
         }
     }
@@ -99,16 +110,16 @@ public class HtmlCache {
      */
     public String get(String name) {
         String cacheKey = getCacheKey(name);
-        String value    = MAPPING.get(cacheKey);
+        Value  value    = MAPPING.get(cacheKey);
+
         if (value != null) {
-            if (value.equals("null")) {
-                Path   path    = CACHE_DIR.resolve(LocalDate.now().toString()).resolve(cacheKey.split(":")[1]);
-                String content = FileUtils.readToString(path.toFile());
+            if (value.text == null) {
+                String content = FileUtils.readToString(value.file);
                 if (content != null) {
-                    MAPPING.put(cacheKey, content);
+                    value.text = content;
                 }
             }
-            return MAPPING.get(cacheKey);
+            return value.text;
         }
         return null;
     }
@@ -120,7 +131,29 @@ public class HtmlCache {
      * @return
      */
     public String getCacheKey(String url) {
-        return LocalDate.now().toString() + ":" + url.replace(PREFIX, "") + SUFFIX;
+        String replace = url.replace(PREFIX, "");
+        if (replace.startsWith("view_video.php")) {
+            Matcher matcher = ID_REGEX.matcher(replace);
+            if (matcher.find()) {
+                replace = matcher.group(1);
+            }
+        }
+        return replace + SUFFIX;
     }
 
+    private LocalDate dir(String content) {
+        Document parse  = Jsoup.parse(content);
+        Elements select = parse.select(".title-yakov");
+        if (select.size() == 0) {
+            return LocalDate.now();
+        }
+        String text = parse.select(".title-yakov").first().text();
+        return LocalDate.parse(text);
+    }
+
+    @AllArgsConstructor
+    static class Value {
+        private final File   file;
+        private       String text;
+    }
 }

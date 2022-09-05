@@ -1,12 +1,11 @@
 package c.utils;
 
 import lombok.experimental.UtilityClass;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -21,9 +20,6 @@ import java.util.stream.Stream;
 @UtilityClass
 public class FileUtils {
 
-    Base64.Encoder encoder = Base64.getEncoder();
-    Base64.Decoder decoder = Base64.getDecoder();
-
     /**
      * 扫描文件
      *
@@ -32,7 +28,7 @@ public class FileUtils {
      * @param consumer
      */
     public void scanFile(Path path, Predicate<File> predicate, Consumer<File> consumer) {
-        File[] files = path.toFile().listFiles();
+        File[] files = getFilesBySortCreate(path.toFile());
         if (files == null) {
             return;
         }
@@ -41,7 +37,7 @@ public class FileUtils {
         while (!queue.isEmpty()) {
             File f = queue.removeLast();
             if (f.isDirectory()) {
-                File[] fs = f.listFiles();
+                File[] fs = getFilesBySortCreate(f);
                 if (fs != null) {
                     for (File item : fs) {
                         queue.push(item);
@@ -66,7 +62,7 @@ public class FileUtils {
             return null;
         }
         try (Stream<String> lines = Files.lines(file.toPath())) {
-            return decode(lines.collect(Collectors.joining()));
+            return lines.collect(Collectors.joining());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -90,8 +86,7 @@ public class FileUtils {
             return null;
         }
         try (Stream<String> lines = Files.lines(file.toPath())) {
-            return lines.map(FileUtils::decode)
-                    .map(function)
+            return lines.map(function)
                     .filter(Objects::nonNull)
                     .collect(collector);
         }
@@ -105,7 +100,7 @@ public class FileUtils {
      * @param consumer
      */
     public void writer(File file, boolean append, Consumer<PrintWriter> consumer) throws IOException {
-        try (EncoderPrintWriter writer = new EncoderPrintWriter(new BufferedWriter(new FileWriter(file, append)))) {
+        try (PrintWriter writer = new PrintWriter(new BufferedWriter(new FileWriter(file, append)))) {
             consumer.accept(writer);
         }
     }
@@ -122,41 +117,27 @@ public class FileUtils {
         writer(file, append, (w) -> w.println(context));
     }
 
-
     /**
-     * 解码
+     * 获取创建时间
      *
-     * @param str
+     * @param file
      * @return
      */
-    private String decode(String str) {
-        if (str == null) {
-            return null;
-        }
+    public long getCreateTime(File file) {
         try {
-            return new String(decoder.decode(str.getBytes(StandardCharsets.UTF_8)));
-        } catch (IllegalArgumentException e) {
-            return str;
+            BasicFileAttributes basicFileAttributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+            return basicFileAttributes.creationTime().toMillis();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-    }
-    
-    private static class EncoderPrintWriter extends PrintWriter {
-
-        public EncoderPrintWriter(@NotNull Writer out) {
-            super(out);
-        }
-
-        @Override
-        public void println(String x) {
-            String str = encoder.encodeToString(x.getBytes(StandardCharsets.UTF_8));
-            super.println(str);
-        }
-
-        @Override
-        public void println(Object x) {
-            String str = encoder.encodeToString(x.toString().getBytes(StandardCharsets.UTF_8));
-            super.println(str);
-        }
+        return 0;
     }
 
+    public File[] getFilesBySortCreate (File file) {
+        File[] files = file.listFiles();
+        if (files != null) {
+            Arrays.sort(files, (f1, f2) -> (int) (getCreateTime(f2) - getCreateTime(f1)));
+        }
+        return files;
+    }
 }

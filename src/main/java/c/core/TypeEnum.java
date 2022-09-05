@@ -5,7 +5,6 @@ import c.beyond.Entry;
 import c.report.Report;
 import c.utils.Pool;
 import c.wapper.BeyondElementWrapper;
-import c.wapper.DefaultElementWrapper;
 import c.wapper.ElementWrapper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -39,11 +38,6 @@ public enum TypeEnum {
      * 最新
      */
     LATEST("https://91porn.com/v.php?next=watch"),
-
-    /**
-     * 上月最热
-     */
-    LAST_MONTH_HOT("https://91porn.com/v.php?category=top&m=-1&viewtype=basic"),
 
     /**
      * 本月最热

@@ -3,6 +3,7 @@ package c.wapper;
 import c.Config;
 import c.beyond.Beyond;
 import c.beyond.Entry;
+import c.cache.VideoCache;
 import c.report.Report;
 import lombok.extern.slf4j.Slf4j;
 
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 
 /**
  * @author lwh
@@ -28,19 +30,21 @@ public abstract class AbstractElementWrapper implements ElementWrapper {
         String sourceUrl = this.getSourceUrl();
         String title     = this.getTitle();
         String url       = this.getUrl();
-        Entry  entry     = Beyond.get(url);
+
+        Entry entry = Beyond.get(url);
 
         if (entry != null && entry.getTime() > MAX_DURATION) {
             Report.downTimeBeyond(this.getSourceUrl());
             log.debug("缓存中获取时间超长 {} 分钟: [{}]", entry.getTime(), title);
             return null;
         }
-        String realUrl  = this.getRealUrl();
-        double duration = duration(realUrl);
+        LocalDate releaseDate = getReleaseDate();
+        String    realUrl     = this.getRealUrl();
+        double    duration    = duration(realUrl);
         if (duration > MAX_DURATION) {
             Report.downTimeBeyond(sourceUrl);
             log.debug("时间超长 {} 分钟: [{}]", duration, title);
-            Beyond.add(duration, url, realUrl, title);
+            Beyond.add(releaseDate, duration, url, realUrl, title);
             return null;
         }
         return duration;
@@ -49,6 +53,13 @@ public abstract class AbstractElementWrapper implements ElementWrapper {
     @Override
     public long timeout() {
         return TIMEOUT;
+    }
+
+    @Override
+    public boolean exist() {
+        String title = getTitle();
+        String path  = VideoCache.get(title);
+        return path != null;
     }
 
     protected double duration(String m3u8Url) throws IOException, InterruptedException {

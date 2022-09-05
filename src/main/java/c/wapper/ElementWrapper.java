@@ -1,6 +1,12 @@
 package c.wapper;
 
+import c.Config;
+import c.cache.VideoCache;
 import org.jsoup.nodes.Element;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
 
 
 /**
@@ -53,9 +59,28 @@ public interface ElementWrapper {
     Double getDuration() throws Exception;
 
     /**
+     * 发布时间
+     *
+     * @return
+     */
+    LocalDate getReleaseDate();
+
+    /**
      * 下载超时时间
      *
      * @return
      */
     long timeout();
+
+    /**
+     * 是否存在
+     *
+     * @return
+     */
+    boolean exist();
+
+    default Path downDir() {
+        LocalDate releaseDate = getReleaseDate();
+        return VideoCache.CACHE_DIR.resolve(releaseDate.toString());
+    }
 }
