@@ -140,7 +140,7 @@ public class FileUtils {
         }
     }
     
-    private class EncoderPrintWriter extends PrintWriter {
+    private static class EncoderPrintWriter extends PrintWriter {
 
         public EncoderPrintWriter(@NotNull Writer out) {
             super(out);

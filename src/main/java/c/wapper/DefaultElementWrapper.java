@@ -114,7 +114,7 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
                 text = "00:00" + text;
             }
             LocalTime parse = LocalTime.parse(text);
-            return Math.min(parse.getMinute(), 1);
+            return Math.max(parse.getMinute(), 1);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return super.duration(m3u8Url);
@@ -126,6 +126,7 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
         if (matcher.find()) {
             return matcher.group(1);
         }
+        log.error("e: {}", e);
         throw new RuntimeException(e);
     }
 }
