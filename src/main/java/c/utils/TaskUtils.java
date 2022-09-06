@@ -10,14 +10,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author lwh
  */
 @Slf4j
-public class Pool {
+public class TaskUtils {
 
     private static final ThreadPoolExecutor          threadPoolExecutor;
     private static final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
-    public static final AtomicInteger finishCount = new AtomicInteger();
-
-    private static final int cpuCores;
+    public static final  AtomicInteger finishCount = new AtomicInteger();
+    private static final int           cpuCores;
 
     static {
         cpuCores = Runtime.getRuntime().availableProcessors();
@@ -69,7 +68,7 @@ public class Pool {
         return threadPoolExecutor.getKeepAliveTime(TimeUnit.MINUTES);
     }
 
-    public static void scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
+    public static void submitSchedule(Runnable command, long initialDelay, long period, TimeUnit unit) {
         scheduledThreadPoolExecutor.scheduleAtFixedRate(command, initialDelay, period, unit);
     }
 }

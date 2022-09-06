@@ -1,6 +1,11 @@
 package c;
 
 import c.core.TypeEnum;
+import c.listen.BeyondListener;
+import c.listen.ReportListener;
+import c.listen.TaskListener;
+import c.listen.VideoListener;
+import c.utils.EventPublisher;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -12,6 +17,13 @@ import java.util.concurrent.ArrayBlockingQueue;
  */
 @Slf4j
 public class Main {
+
+    static {
+        EventPublisher.register(new ReportListener());
+        EventPublisher.register(new VideoListener());
+        EventPublisher.register(new TaskListener());
+        EventPublisher.register(new BeyondListener());
+    }
 
     public static void main(String[] args) throws InterruptedException, URISyntaxException, IOException {
         TypeEnum type = Config.getType();

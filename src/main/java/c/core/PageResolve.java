@@ -1,39 +1,37 @@
 package c.core;
 
 import c.Config;
-import c.utils.Pool;
+import c.event.PageResolveFinishEvent;
+import c.utils.EventPublisher;
 import c.report.Report;
 import c.utils.HttpHelper;
 import c.wapper.DocumentWrapper;
 import c.wapper.DefaultElementWrapper;
 import c.wapper.ElementWrapper;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
-import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Getter
-@Setter
 @Slf4j
 public class PageResolve implements Runnable {
 
-    private BlockingQueue<ElementWrapper> queue;
+    private final BlockingQueue<ElementWrapper> queue;
 
-    private TypeEnum type;
+    private final TypeEnum type;
 
-    private String uid;
+    private final String uid;
 
     private Integer maxPage;
 
-    private AtomicInteger currentPage;
+    private final AtomicInteger currentPage;
 
     private Document document;
 
@@ -54,6 +52,37 @@ public class PageResolve implements Runnable {
         this.uid = uid;
     }
 
+    @Override
+    public void run() {
+        log.info("开始");
+        try {
+            Document doc;
+            while ((doc = nextPage()) != null) {
+                log.info("{}, 当前页: {}", currentUrl, currentPage);
+
+                Elements select = doc.select("#wrapper > div.container > .row > div > .row > div");
+                for (Element element : select) {
+                    queue.put(new DefaultElementWrapper(element, currentUrl));
+                    Report.produce(currentUrl);
+
+                    String href = element.select(".videos-text-align > a").attr("href");
+                    if ("".equals(href)) {
+                        href = element.select(".well > a").attr("href");
+                    }
+                    String title = element.select(".video-title").html().replace("[原创]", "").trim();
+                    log.debug("put: {}, {}, {}", currentPage, title, href);
+                }
+                log.info("{}, 第{}页, 完成", currentUrl, currentPage);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+        log.info("退出");
+        EventPublisher.publish(new PageResolveFinishEvent());
+    }
+
     public Document nextPage() {
         if (currentPage.get() == maxPage) {
             this.refreshMaxPage = false;
@@ -70,7 +99,7 @@ public class PageResolve implements Runnable {
             } else {
                 currentUrl = type.getUrl() + "&page=" + currentPage.incrementAndGet();
             }
-            DocumentWrapper documentWrapper = HttpHelper.doHttp(currentUrl);
+            DocumentWrapper documentWrapper = HttpHelper.http(currentUrl);
             if (documentWrapper.getType() == DocumentWrapper.Type.REMOTE && currentPage.get() != 1) {
                 TimeUnit.SECONDS.sleep(20);
             }
@@ -105,36 +134,5 @@ public class PageResolve implements Runnable {
             // 刷新标识
             this.refreshMaxPage = true;
         }
-    }
-
-    @Override
-    public void run() {
-        log.info("开始");
-        try {
-            Document doc;
-            while ((doc = nextPage()) != null) {
-                log.info("{}, 当前页: {}", currentUrl, currentPage);
-
-                Elements select = doc.select("#wrapper > div.container > .row > div > .row > div");
-                for (Element element : select) {
-                    queue.put(new DefaultElementWrapper(element, currentUrl));
-                    Report.produce(currentUrl);
-
-                    String href = element.select(".videos-text-align > a").attr("href");
-                    if ("".equals(href)) {
-                        href = element.select(".well > a").attr("href");
-                    }
-                    String title = element.select(".video-title").html().replace("[原创]", "").trim();
-                    log.debug("put: {}, {}, {}", currentPage, title, href);
-                }
-                log.info("{}, 第{}页, 完成", currentUrl, currentPage);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-        log.info("退出");
-        Pool.finish();
     }
 }

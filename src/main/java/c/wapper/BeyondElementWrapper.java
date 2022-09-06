@@ -1,7 +1,7 @@
 package c.wapper;
 
 import c.beyond.Entry;
-import c.utils.Pool;
+import c.utils.TaskUtils;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.nodes.Element;
 
@@ -36,18 +36,18 @@ public class BeyondElementWrapper extends AbstractElementWrapper {
     }
 
     @Override
-    public String getRealUrl() throws Exception {
+    public String getRealUrl() {
         return entry.getRealUrl();
     }
 
     @Override
     public long timeout() {
         try {
-            long i = (long) (getDuration().intValue() * 0.25);
+            long i = (long) (this.getDuration() * 0.25);
             if (i <= super.timeout()) {
                 return super.timeout();
             }
-            return Math.min(i, (Pool.getTimeOut()));
+            return Math.min(i, (TaskUtils.getTimeOut()));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -55,7 +55,7 @@ public class BeyondElementWrapper extends AbstractElementWrapper {
     }
 
     @Override
-    public Double getDuration() {
+    public double getDuration() {
         return entry.getTime();
     }
 

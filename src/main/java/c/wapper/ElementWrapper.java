@@ -1,11 +1,9 @@
 package c.wapper;
 
-import c.Config;
 import c.cache.VideoCache;
 import org.jsoup.nodes.Element;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 
 
@@ -56,7 +54,7 @@ public interface ElementWrapper {
      * @return
      * @throws Exception
      */
-    Double getDuration() throws Exception;
+    double getDuration() throws Exception;
 
     /**
      * 发布时间

@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 
 /**
  * @author lwh
@@ -20,39 +19,23 @@ import java.time.LocalDate;
 @Slf4j
 public abstract class AbstractElementWrapper implements ElementWrapper {
 
-    private static final int MAX_DURATION = Config.getMaxDuration();
-    private static final int TIMEOUT      = Config.getDownloadTimeout();
-
     private static final String DURATION = "export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890 && ffprobe -i '%s' -show_entries format=duration -v quiet -of csv='p=0'";
 
     @Override
-    public Double getDuration() throws Exception {
-        String sourceUrl = this.getSourceUrl();
-        String title     = this.getTitle();
-        String url       = this.getUrl();
+    public double getDuration() throws Exception {
+        String url   = this.getUrl();
+        Entry  entry = Beyond.get(url);
 
-        Entry entry = Beyond.get(url);
-
-        if (entry != null && entry.getTime() > MAX_DURATION) {
-            Report.downTimeBeyond(this.getSourceUrl());
-            log.debug("缓存中获取时间超长 {} 分钟: [{}]", entry.getTime(), title);
-            return null;
+        if (entry != null) {
+            return entry.getTime();
         }
-        LocalDate releaseDate = getReleaseDate();
-        String    realUrl     = this.getRealUrl();
-        double    duration    = duration(realUrl);
-        if (duration > MAX_DURATION) {
-            Report.downTimeBeyond(sourceUrl);
-            log.debug("时间超长 {} 分钟: [{}]", duration, title);
-            Beyond.add(releaseDate, duration, url, realUrl, title);
-            return null;
-        }
-        return duration;
+        String realUrl = this.getRealUrl();
+        return duration(realUrl);
     }
 
     @Override
     public long timeout() {
-        return TIMEOUT;
+        return Config.getDownloadTimeout();
     }
 
     @Override

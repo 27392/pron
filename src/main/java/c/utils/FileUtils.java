@@ -133,11 +133,32 @@ public class FileUtils {
         return 0;
     }
 
-    public File[] getFilesBySortCreate (File file) {
+    /**
+     * 获取文件下所有文件(按照创建时间排序)
+     *
+     * @param file
+     * @return
+     */
+    public File[] getFilesBySortCreate(File file) {
         File[] files = file.listFiles();
         if (files != null) {
             Arrays.sort(files, (f1, f2) -> (int) (getCreateTime(f2) - getCreateTime(f1)));
         }
         return files;
+    }
+
+    /**
+     * 存在获取,不存在创建
+     *
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public File getOrCreate(File file) throws IOException {
+        if (file.isFile()) {
+            return file;
+        }
+        Path file1 = Files.createFile(file.toPath());
+        return file1.toFile();
     }
 }

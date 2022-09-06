@@ -3,7 +3,7 @@ package c.core;
 import c.beyond.Beyond;
 import c.beyond.Entry;
 import c.report.Report;
-import c.utils.Pool;
+import c.utils.TaskUtils;
 import c.wapper.BeyondElementWrapper;
 import c.wapper.ElementWrapper;
 import lombok.Getter;
@@ -81,7 +81,7 @@ public enum TypeEnum {
                 return 0;
             }
             for (String id : uids) {
-                Pool.submit(new PageResolve(queue, this, id));
+                TaskUtils.submit(new PageResolve(queue, this, id));
             }
             return uids.size();
         }
@@ -89,7 +89,7 @@ public enum TypeEnum {
     BEYOND("") {
         @Override
         public int startPage(BlockingQueue<ElementWrapper> queue) {
-            Pool.submit(() -> {
+            TaskUtils.submit(() -> {
 
                 ListIterator<Entry> iterator = new ArrayList<>(Beyond.getEntries()).listIterator(Beyond.getEntries().size());
 
@@ -103,7 +103,7 @@ public enum TypeEnum {
                     }
                 }
                 log.info("BEYOND 退出");
-                Pool.finish();
+                TaskUtils.finish();
             });
             return 1;
         }
@@ -112,13 +112,13 @@ public enum TypeEnum {
     private final String url;
 
     public int startPage(BlockingQueue<ElementWrapper> queue) throws IOException, URISyntaxException {
-        Pool.submit(new PageResolve(queue, this));
+        TaskUtils.submit(new PageResolve(queue, this));
         return 1;
     }
 
     public int startDown(BlockingQueue<ElementWrapper> queue, int size) throws IOException, URISyntaxException {
         for (int i = 0; i < size; i++) {
-            Pool.submit(new Downloader(queue));
+            TaskUtils.submit(new Downloader(queue));
         }
         return size;
     }
@@ -129,9 +129,9 @@ public enum TypeEnum {
 
         while (true) {
             TimeUnit.SECONDS.sleep(10);
-            if (Pool.finishCount.get() == (downCount + pageCount)) {
+            if (TaskUtils.finishCount.get() == (downCount + pageCount)) {
                 log.info("{}", Report.print());
-                Pool.shutdown();
+                TaskUtils.shutdown();
                 break;
             }
         }

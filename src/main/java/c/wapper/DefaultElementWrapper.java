@@ -18,7 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,7 +33,6 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
 
     private static final Pattern ENCODE_STR_REGEX = Pattern.compile("strencode.+\\((.+?)\\)");
     private static final Pattern URL_REGEX        = Pattern.compile("src='((.+?)(\\.m3u8))'");
-    private static final Pattern DATE_REGEX       = Pattern.compile("(([0-9+]+) (小时|天))");
     private static final Pattern ID_REGEX         = Pattern.compile("viewkey=(\\w+)");
 
     private static final String script;
@@ -82,10 +80,10 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
     @Override
     public LocalDate getReleaseDate() {
         try {
-            DocumentWrapper documentWrapper = HttpHelper.doHttp(getUrl());
+            DocumentWrapper documentWrapper = HttpHelper.http(getUrl());
             String          text            = documentWrapper.getDocument().select(".title-yakov").first().text();
             return LocalDate.parse(text);
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
@@ -100,8 +98,8 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
     }
 
     @Override
-    public String getRealUrl() throws IOException {
-        DocumentWrapper documentWrapper = HttpHelper.doHttp(getUrl());
+    public String getRealUrl() throws IOException, InterruptedException {
+        DocumentWrapper documentWrapper = HttpHelper.http(getUrl());
         Document        doc             = documentWrapper.getDocument();
         String          videoEleStr     = doc.select("video > script").html();
 

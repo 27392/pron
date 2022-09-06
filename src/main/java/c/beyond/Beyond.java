@@ -25,7 +25,7 @@ public class Beyond {
 
     static {
         try {
-            map = FileUtils.read(path.toFile(), r -> Entry.of(r.split(SEPARATOR)), Collectors.toMap(Entry::getUrl, r -> r, (o1, o2) -> o1, LinkedHashMap::new));
+            map = FileUtils.read(FileUtils.getOrCreate(path.toFile()), r -> Entry.of(r.split(SEPARATOR)), Collectors.toMap(Entry::getUrl, r -> r, (o1, o2) -> o1, LinkedHashMap::new));
         } catch (IOException e) {
             e.printStackTrace();
         }

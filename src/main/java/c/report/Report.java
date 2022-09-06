@@ -1,6 +1,6 @@
 package c.report;
 
-import c.utils.Pool;
+import c.utils.TaskUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
@@ -22,7 +22,7 @@ public class Report {
     static {
         final Set<String> finish = new HashSet<>();
         final String      end    = "&page=";
-        Pool.scheduleAtFixedRate(() -> {
+        TaskUtils.submitSchedule(() -> {
             HashSet<String> w = new LinkedHashSet<>();
             report.forEach((k, v) -> {
                 int computed = computed(k, finish);
@@ -76,6 +76,10 @@ public class Report {
         report.get(url).getDownSuccess().incrementAndGet();
     }
 
+    public static void downExpired(String url) {
+        report.get(url).getDownExpired().incrementAndGet();
+    }
+
     public static void downFail(String url) {
         report.get(url).getDownFail().incrementAndGet();
     }
@@ -86,12 +90,8 @@ public class Report {
 
     private static int computed(String url, Set<String> finish) {
         State state = report.get(url);
-        int   p     = state.getProduce().get();
-        int c = state.getDownSuccess().get() +
-                state.getDownFail().get() +
-                state.getDownTimeout().get() +
-                state.getDownTimeBeyond().get() +
-                state.getDownSkip().get();
+        int   p     = state.produceCount();
+        int   c     = state.consumeCount();
         if (p == c && !finish.contains(url)) {
             log.info("{} 处理完成, 状态: {}", url, state);
             finish.add(url);
@@ -118,8 +118,7 @@ public class Report {
             }
         });
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("\n")
-                .append("网络请数量: ").append(httpCount.get())
+        stringBuilder.append("网络请数量: ").append(httpCount.get())
                 .append(", 耗时: ").append(now).append(", 结束 ").append(LocalDateTime.now());
         map.forEach((k, v) -> {
             stringBuilder.append("\n")
