@@ -1,7 +1,7 @@
 package c.wapper;
 
-import c.core.Downloader;
 import c.utils.HttpHelper;
+import c.utils.RegexUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -12,8 +12,6 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author lwh
@@ -23,13 +21,8 @@ import java.util.regex.Pattern;
 @AllArgsConstructor
 public class DefaultElementWrapper extends AbstractElementWrapper {
 
-    private static final Pattern ENCODE_STR_REGEX = Pattern.compile("strencode.+\\((.+?)\\)");
-    private static final Pattern URL_REGEX        = Pattern.compile("src='((.+?)(\\.m3u8))'");
-    private static final Pattern ID_REGEX         = Pattern.compile("viewkey=(\\w+)");
-
     private final Element element;
     private final String  sourceUrl;
-
 
     @Override
     public String getTitle() {
@@ -38,7 +31,7 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
                 .replaceAll("/", "")
                 .replaceAll(" - ", "")
                 .trim();
-        String s = regexMatch(ID_REGEX, getUrl());
+        String s = RegexUtils.id(getUrl());
         return trim + " - " + s;
     }
 
@@ -68,11 +61,11 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
         Document        doc             = documentWrapper.getDocument();
         String          videoEleStr     = doc.select("video > script").html();
 
-        String encoderStr = regexMatch(ENCODE_STR_REGEX, videoEleStr);
+        String encoderStr = RegexUtils.encodeVideoUrl(videoEleStr);
         String decoderStr = URLDecoder.decode(encoderStr, "UTF-8");
 
         log.debug("Source: {}", decoderStr);
-        String m3u8Src = regexMatch(URL_REGEX, decoderStr);
+        String m3u8Src = RegexUtils.videoUrl(decoderStr);
 
         log.debug("M3u8 src: {}", m3u8Src);
         return m3u8Src;
@@ -96,12 +89,4 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
         }
     }
 
-    private static String regexMatch(Pattern pattern, String e) {
-        Matcher matcher = pattern.matcher(e);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        log.error("e: {}", e);
-        throw new RuntimeException(e);
-    }
 }

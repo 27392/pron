@@ -31,7 +31,7 @@ public class Config {
     }
 
     public int getMaxPage() {
-        return Integer.parseInt(PROPERTIES.getProperty("maxPage", "5"));
+        return Integer.parseInt(PROPERTIES.getProperty("maxPage", "1"));
     }
 
     public int getMaxDuration() {
@@ -42,20 +42,16 @@ public class Config {
         return Integer.parseInt(PROPERTIES.getProperty("downloadTimeout", "6"));
     }
 
-    public String getWebDriver() {
-        return PROPERTIES.getProperty("webdriver");
-    }
-
     public int getMaxHtmlCache() {
-        return Integer.parseInt(PROPERTIES.getProperty("maxHtmlCache", "6"));
+        return Integer.parseInt(PROPERTIES.getProperty("maxHtmlCache", "0"));
     }
 
     public int getDownCount() {
-        return Integer.parseInt(PROPERTIES.getProperty("downCount", "6"));
+        return Integer.parseInt(PROPERTIES.getProperty("downCount", "1"));
     }
 
     public LocalDate getLastTime() {
-        int lastTime = Integer.parseInt(PROPERTIES.getProperty("lastTime", "7"));
+        int lastTime = Integer.parseInt(PROPERTIES.getProperty("lastTime", "1"));
         return LocalDate.now().minusDays(lastTime);
     }
 

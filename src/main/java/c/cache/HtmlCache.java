@@ -2,8 +2,7 @@ package c.cache;
 
 import c.Config;
 import c.utils.FileUtils;
-import c.utils.HttpHelper;
-import c.wapper.DocumentWrapper;
+import c.utils.RegexUtils;
 import lombok.AllArgsConstructor;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +16,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author lwh
@@ -29,8 +26,6 @@ public class HtmlCache {
 
     public final String SUFFIX = ".html";
     public final String PREFIX = "https://91porn.com/";
-
-    private static final Pattern ID_REGEX = Pattern.compile("viewkey=(\\w+)");
 
     private final Path CACHE_DIR = Paths.get(Config.getDownloadDir()).resolve("html");
 
@@ -140,10 +135,7 @@ public class HtmlCache {
     public String getCacheKey(String url) {
         String replace = url.replace(PREFIX, "");
         if (replace.startsWith("view_video.php")) {
-            Matcher matcher = ID_REGEX.matcher(replace);
-            if (matcher.find()) {
-                replace = matcher.group(1);
-            }
+            replace = RegexUtils.id(replace);
         }
         return replace + SUFFIX;
     }

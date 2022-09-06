@@ -34,16 +34,16 @@ public class Downloader implements Runnable {
                 }
 
                 String title = element.getTitle();
-                log.debug("get: {}", title);
+                log.info("处理: {}", title);
 
                 if (element.exist()) {
-                    log.debug("跳过: {}", title);
+                    log.info("跳过: {}", title);
                     EventPublisher.publish(new VideoSkipEvent(element));
                     continue;
                 }
                 double duration = element.getDuration();
                 if (duration > Config.getMaxDuration()) {
-                    log.debug("时间超长 {} 分钟: [{}]", duration, title);
+                    log.info("时间超长 {} 分钟: [{}]", duration, title);
                     EventPublisher.publish(new VideoExpiredEvent(element));
                     continue;
                 }
@@ -51,7 +51,7 @@ public class Downloader implements Runnable {
                 String    url         = element.getUrl();
                 LocalDate releaseDate = element.getReleaseDate();
                 if (Config.getLastTime().isAfter(releaseDate)) {
-                    log.debug("时间超出: 发布时间: [{}], 规定时间: [{}], 名称: [{}], 来源: [{}], 地址: [{}]", releaseDate, Config.getLastTime(), title, element.getSourceUrl(), url);
+                    log.info("时间超出: 发布时间: [{}], 规定时间: [{}], 名称: [{}], 来源: [{}], 地址: [{}]", releaseDate, Config.getLastTime(), title, element.getSourceUrl(), url);
                     EventPublisher.publish(new VideoExpiredEvent(element));
                     continue;
                 }
