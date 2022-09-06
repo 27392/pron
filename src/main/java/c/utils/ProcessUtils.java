@@ -1,5 +1,6 @@
 package c.utils;
 
+import c.Config;
 import c.cache.VideoCache;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.MessageFormat;
 
 /**
  * @author lwh
@@ -19,12 +21,17 @@ import java.nio.file.Path;
 @UtilityClass
 public class ProcessUtils {
 
-    private static final String OUTPUT_MP4 = "export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890 && ffmpeg -y -i '%s' -acodec copy -vcodec copy '%s'";
-    private static final String DURATION   = "export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890 && ffprobe -i '%s' -show_entries format=duration -v quiet -of csv='p=0'";
+    private static       String PROXY_STR  = "export https_proxy=http://{0} http_proxy=http://{0} all_proxy=socks5://{0}";
+    private static final String OUTPUT_MP4 = "ffmpeg -y -i '%s' -acodec copy -vcodec copy '%s'";
+    private static final String DURATION   = "ffprobe -i '%s' -show_entries format=duration -v quiet -of csv='p=0'";
+
+    static {
+        PROXY_STR = MessageFormat.format(PROXY_STR, Config.getProxy());
+    }
 
     public Process doExecute(String command) throws InterruptedException, IOException {
 
-        ProcessBuilder builder = new ProcessBuilder("/bin/sh", "-c", command);
+        ProcessBuilder builder = new ProcessBuilder("/bin/sh", "-c", PROXY_STR + " && " + command);
         Process        p       = builder.start();
         int            i       = p.waitFor();
         if (i != 0) {

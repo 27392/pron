@@ -1,5 +1,6 @@
 package c.utils;
 
+import c.Config;
 import c.cache.HtmlCache;
 import c.event.HttpSuccessEvent;
 import c.report.Report;
@@ -24,12 +25,21 @@ import java.util.stream.Collectors;
 @Slf4j
 public class HttpHelper {
 
-    private static final Proxy DEFAULT_PROXY = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", 7890));
+    private static final Proxy DEFAULT_PROXY;
 
     private static final HashMap<String, List<Cookie>> COOKIE_STORE = new HashMap<>();
 
     private static final String UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.101 Safari/537.36";
 
+    static {
+        try {
+            String[] split = Config.getProxy().split(":");
+            DEFAULT_PROXY = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(split[0], Integer.parseInt(split[1])));
+        } catch (Exception e) {
+            log.error("代理配置错误", e);
+            throw new RuntimeException(e);
+        }
+    }
 
     public static String randomIp() {
         return new Random()

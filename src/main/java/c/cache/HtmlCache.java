@@ -33,8 +33,12 @@ public class HtmlCache {
 
     static {
 
-        FileUtils.scanFile(CACHE_DIR, f -> f.getName().endsWith(SUFFIX), f -> MAPPING.put(f.getName(), new Value(f, null)));
-        log.info("找到html文件: {}", MAPPING.size());
+        try {
+            FileUtils.scanFile(CACHE_DIR, f -> f.getName().endsWith(SUFFIX), f -> MAPPING.put(f.getName(), new Value(f, null)));
+            log.info("找到html文件: {}", MAPPING.size());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         // 清理缓存
         clear(Config.getMaxHtmlCache());

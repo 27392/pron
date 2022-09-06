@@ -25,11 +25,15 @@ public class VideoCache {
     public final Path CACHE_DIR = Paths.get(Config.getDownloadDir()).resolve("video");
 
     static {
-        FileUtils.scanFile(CACHE_DIR, f -> f.getName().endsWith(SUFFIX), f -> {
-            String[] split = f.getName().split(" - ");
-            MAPPING.put(split[1], f.getAbsolutePath());
-        });
-        log.info("找到视频文件: {}", MAPPING.size());
+        try {
+            FileUtils.scanFile(CACHE_DIR, f -> f.getName().endsWith(SUFFIX), f -> {
+                String[] split = f.getName().split(" - ");
+                MAPPING.put(split[1], f.getAbsolutePath());
+            });
+            log.info("找到视频文件: {}", MAPPING.size());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public String get(String name) {

@@ -55,6 +55,10 @@ public class Config {
         return LocalDate.now().minusDays(lastTime);
     }
 
+    public String getProxy() {
+        return PROPERTIES.getProperty("proxy");
+    }
+
     public TypeEnum getType() {
         int type = Integer.parseInt(PROPERTIES.getProperty("type", "1"));
         return Arrays.stream(TypeEnum.values()).filter(r -> (r.ordinal() + 1) == type).findAny().orElse(TypeEnum.BOUTIQUE);
