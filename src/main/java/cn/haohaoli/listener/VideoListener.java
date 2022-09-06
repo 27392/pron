@@ -1,7 +1,6 @@
 package cn.haohaoli.listener;
 
 import cn.haohaoli.cache.VideoCache;
-import c.event.*;
 import com.google.common.eventbus.Subscribe;
 import cn.haohaoli.event.VideoDownFailEvent;
 import cn.haohaoli.event.VideoDownTimeoutEvent;
