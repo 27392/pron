@@ -1,6 +1,7 @@
 package cn.haohaoli.utils;
 
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -17,6 +18,7 @@ import java.util.stream.Stream;
 /**
  * @author lwh
  */
+@Slf4j
 @UtilityClass
 public class FileUtils {
 
@@ -160,5 +162,21 @@ public class FileUtils {
         }
         Path file1 = Files.createFile(file.toPath());
         return file1.toFile();
+    }
+
+    /**
+     * 删除文件
+     *
+     * @param file
+     * @return
+     */
+    public boolean delete(File file) {
+        try {
+            Files.delete(file.toPath());
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            return false;
+        }
+        return true;
     }
 }

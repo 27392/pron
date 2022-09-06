@@ -42,10 +42,10 @@ public class VideoCache {
         return MAPPING.get(split[1] + VIDEO_SUFFIX);
     }
 
-    public boolean delete(String title) throws IOException {
-        Path path = CACHE_DIR.resolve(LocalDate.now().toString())
+    public boolean delete(LocalDate releaseDate, String title) throws IOException {
+        Path path = CACHE_DIR.resolve(releaseDate.toString())
                 .resolve(title + VIDEO_SUFFIX);
-        return path.toFile().delete();
+        return FileUtils.delete(path.toFile());
     }
 
 }

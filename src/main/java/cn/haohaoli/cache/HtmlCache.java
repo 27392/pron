@@ -89,7 +89,7 @@ public class HtmlCache {
                         log.info("cache: 删除数量: {}", delCount);
                         return;
                     }
-                    boolean delete = f.delete();
+                    boolean delete = FileUtils.delete(f);
                     if (delete) {
                         MAPPING.remove(f.getName());
                     }
@@ -99,7 +99,7 @@ public class HtmlCache {
                     c++;
                 }
                 if (c == fs.length) {
-                    boolean delete = file.delete();
+                    boolean delete = FileUtils.delete(file);
                     log.info("cache: {}, delete: {}", file.getName(), delete);
                 }
             }
