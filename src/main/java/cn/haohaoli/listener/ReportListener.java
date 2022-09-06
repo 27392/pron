@@ -48,6 +48,13 @@ public class ReportListener {
     }
 
     @Subscribe
+    public void durationLong(VideoDurationLongEvent event) {
+        String title     = event.getWrapper().getTitle();
+        String sourceUrl = event.getWrapper().getSourceUrl();
+        Report.downTimeBeyond(sourceUrl);
+    }
+
+    @Subscribe
     public void httpSuccess(HttpSuccessEvent event) {
         Report.httpRequest();
     }
