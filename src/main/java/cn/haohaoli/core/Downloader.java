@@ -43,7 +43,7 @@ public class Downloader implements Runnable {
                 double duration = element.getDuration();
                 if (duration > Config.getMaxDuration()) {
                     log.info("时间超长 {} 分钟: [{}]", duration, title);
-                    EventPublisher.publish(new VideoExpiredEvent(element));
+                    EventPublisher.publish(new VideoDurationLongEvent(element));
                     continue;
                 }
 

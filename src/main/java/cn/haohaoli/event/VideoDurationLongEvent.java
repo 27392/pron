@@ -9,7 +9,7 @@ import lombok.Getter;
  */
 @Getter
 @AllArgsConstructor
-public class DownloaderDurationLongEvent {
+public class VideoDurationLongEvent {
 
     private final ElementWrapper wrapper;
 }

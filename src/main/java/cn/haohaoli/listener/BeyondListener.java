@@ -1,7 +1,7 @@
 package cn.haohaoli.listener;
 
 import cn.haohaoli.beyond.Beyond;
-import cn.haohaoli.event.DownloaderDurationLongEvent;
+import cn.haohaoli.event.VideoDurationLongEvent;
 import cn.haohaoli.wapper.ElementWrapper;
 import com.google.common.eventbus.Subscribe;
 
@@ -14,7 +14,7 @@ import java.time.LocalDate;
 public class BeyondListener {
 
     @Subscribe
-    public void downloaderFinish(DownloaderDurationLongEvent event) throws Exception {
+    public void downloaderFinish(VideoDurationLongEvent event) throws Exception {
         ElementWrapper wrapper     = event.getWrapper();
         String         realUrl     = wrapper.getRealUrl();
         LocalDate      releaseDate = wrapper.getReleaseDate();
