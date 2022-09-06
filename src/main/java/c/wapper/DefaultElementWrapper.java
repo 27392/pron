@@ -7,21 +7,13 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URLDecoder;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * @author lwh
@@ -35,36 +27,9 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
     private static final Pattern URL_REGEX        = Pattern.compile("src='((.+?)(\\.m3u8))'");
     private static final Pattern ID_REGEX         = Pattern.compile("viewkey=(\\w+)");
 
-    private static final String script;
-
     private final Element element;
     private final String  sourceUrl;
 
-    static {
-        try {
-            Path path = Paths.get(Downloader.class.getClassLoader().getResource("m.js").toURI());
-            script = Files.lines(path).collect(Collectors.joining());
-        } catch (IOException | URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    static class ExecutorFactory {
-        private static volatile JavascriptExecutor executor;
-
-        static JavascriptExecutor getInstance() {
-            if (executor == null) {
-                synchronized (ExecutorFactory.class) {
-                    if (executor == null) {
-                        ChromeOptions chromeOptions = new ChromeOptions();
-                        chromeOptions.setHeadless(true);
-                        executor = new ChromeDriver(chromeOptions);
-                    }
-                }
-            }
-            return executor;
-        }
-    }
 
     @Override
     public String getTitle() {
@@ -104,14 +69,8 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
         String          videoEleStr     = doc.select("video > script").html();
 
         String encoderStr = regexMatch(ENCODE_STR_REGEX, videoEleStr);
+        String decoderStr = URLDecoder.decode(encoderStr, "UTF-8");
 
-        String decoderStr;
-        if (encoderStr.contains(",")) {
-            String jsStr = script + "return strencode(" + encoderStr + ")";
-            decoderStr = (String) ExecutorFactory.getInstance().executeScript(jsStr);
-        } else {
-            decoderStr = URLDecoder.decode(encoderStr, "UTF-8");
-        }
         log.debug("Source: {}", decoderStr);
         String m3u8Src = regexMatch(URL_REGEX, decoderStr);
 

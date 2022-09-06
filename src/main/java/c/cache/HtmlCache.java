@@ -45,6 +45,13 @@ public class HtmlCache {
         clear(Config.getMaxHtmlCache());
     }
 
+    /**
+     * 保存
+     *
+     * @param name
+     * @param content
+     * @throws IOException
+     */
     public void save(String name, String content) throws IOException {
         String cacheKey = getCacheKey(name);
 
@@ -141,6 +148,12 @@ public class HtmlCache {
         return replace + SUFFIX;
     }
 
+    /**
+     * 日期
+     *
+     * @param content
+     * @return
+     */
     private LocalDate dir(String content) {
         Document parse  = Jsoup.parse(content);
         Elements select = parse.select(".title-yakov");

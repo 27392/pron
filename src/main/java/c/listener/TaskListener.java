@@ -1,4 +1,4 @@
-package c.listen;
+package c.listener;
 
 import c.event.DownloaderFinishEvent;
 import c.event.PageResolveFinishEvent;

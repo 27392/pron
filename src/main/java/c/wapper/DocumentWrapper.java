@@ -2,7 +2,6 @@ package c.wapper;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.jsoup.nodes.Document;
 
 /**

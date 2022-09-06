@@ -19,6 +19,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * @author lwh
+ */
 @Getter
 @Slf4j
 public class PageResolve implements Runnable {

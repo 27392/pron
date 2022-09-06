@@ -4,46 +4,23 @@ import c.Config;
 import c.cache.VideoCache;
 import c.event.*;
 import c.utils.EventPublisher;
+import c.utils.ProcessUtils;
 import c.wapper.ElementWrapper;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.concurrent.*;
 
 /**
- * Created on 06/27 2021.
- *
- * @author Bennie
+ * @author lwh
  */
 @Slf4j
+@AllArgsConstructor
 public class Downloader implements Runnable {
 
-    private static final String COMMAND = "export https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890 && ffmpeg -y -i '%s' -acodec copy -vcodec copy '%s'";
-
     private final BlockingQueue<ElementWrapper> queue;
-
-    public Downloader(BlockingQueue<ElementWrapper> queue) {
-        this.queue = queue;
-    }
-
-    private int outputToMp4(Path dir, String title, String m3u8Url) throws InterruptedException, IOException {
-
-        Path directories = Files.createDirectories(dir).resolve(title + VideoCache.SUFFIX);
-
-        String cmd = String.format(COMMAND, m3u8Url, directories.toString());
-
-        ProcessBuilder builder = new ProcessBuilder("/bin/sh", "-c", cmd);
-        Process        p       = builder.start();
-        int            i       = p.waitFor();
-        if (i != 0) {
-            log.warn("cmd: {}", cmd);
-        }
-        return i;
-    }
-
 
     @Override
     public void run() {
@@ -90,7 +67,7 @@ public class Downloader implements Runnable {
                     EventPublisher.publish(new VideoSkipEvent(element));
                 }
 
-                FutureTask<Integer> integerFutureTask = new FutureTask<>(() -> outputToMp4(path, title, m3u8Src));
+                FutureTask<Integer> integerFutureTask = new FutureTask<>(() -> ProcessUtils.outputToMp4(path, title, m3u8Src));
                 Thread              thread            = new Thread(integerFutureTask, "down-");
                 thread.start();
 
@@ -119,6 +96,12 @@ public class Downloader implements Runnable {
         EventPublisher.publish(new DownloaderFinishEvent());
     }
 
+    /**
+     * 转分钟
+     *
+     * @param start
+     * @return
+     */
     private String watch(long start) {
         double d = ((System.currentTimeMillis() - start) / 1000d) / 60d;
         return String.format("%.2f", d);

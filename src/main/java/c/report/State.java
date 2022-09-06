@@ -4,6 +4,9 @@ import lombok.Getter;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * @author lwh
+ */
 @Getter
 public class State {
 
