@@ -30,16 +30,27 @@ public class HtmlCache {
     private final Map<String, Value> MAPPING = new LinkedHashMap<>();
 
     static {
-
         try {
             FileUtils.scanFile(CACHE_DIR, f -> f.getName().endsWith(Const.HTML_SUFFIX), f -> MAPPING.put(f.getName(), new Value(f, null)));
+
+            // 清理页面数据
+            LocalDate now = LocalDate.now();
+            MAPPING.entrySet().removeIf((entry) -> {
+                File file = entry.getValue().file;
+                if (entry.getKey().contains(".php") && LocalDate.parse(file.getParentFile().getName()).isBefore(now)) {
+                    log.info("cache: 删除页面: {}", file.getName());
+                    return FileUtils.delete(file);
+                }
+                return false;
+            });
+
             log.info("找到html文件: {}", MAPPING.size());
+
+            // 清理缓存
+            clear(Config.getMaxHtmlCache());
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        // 清理缓存
-        clear(Config.getMaxHtmlCache());
     }
 
     /**
