@@ -150,6 +150,9 @@ public class HtmlCache {
         String replace = url.replace(Const.HOST, "");
         if (replace.startsWith("view_video.php")) {
             replace = RegexUtils.id(replace);
+        }else {
+            int i = replace.indexOf("?");
+            replace = replace.substring(i + 1);
         }
         return replace + Const.HTML_SUFFIX;
     }

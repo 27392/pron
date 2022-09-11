@@ -4,9 +4,9 @@ import cn.haohaoli.cmmon.Const;
 import cn.haohaoli.config.Config;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
@@ -40,9 +40,16 @@ public class ProcessUtils {
      */
     public Process doExecute(String command) throws InterruptedException, IOException {
 
-        ProcessBuilder builder = new ProcessBuilder("/bin/sh", "-c", PROXY_STR + " && " + command);
-        Process        p       = builder.start();
-        int            i       = p.waitFor();
+        ProcessBuilder builder;
+        String         osName = System.getProperties().getProperty("os.name");
+        if (osName.equals("Windows")) {
+            builder = new ProcessBuilder("cmd.exe", "/c", command);
+        } else {
+            builder = new ProcessBuilder("/bin/sh", "-c", command);
+        }
+
+        Process p = builder.start();
+        int     i = p.waitFor();
         if (i != 0) {
             log.warn("cmd: {}, result: {}", command, getResult(p));
         }
@@ -87,7 +94,7 @@ public class ProcessUtils {
     public int outputToMp4(Path dir, String name, String m3u8Url) throws IOException, InterruptedException {
         Path   directories = Files.createDirectories(dir).resolve(name + Const.VIDEO_SUFFIX);
         String cmd         = String.format(OUTPUT_MP4_COMMAND, m3u8Url, directories.toString());
-        return execute(cmd);
+        return execute(Config.getFfmpegDir() + File.separator + cmd);
     }
 
     /**
@@ -100,7 +107,7 @@ public class ProcessUtils {
      */
     public double duration(String m3u8Url) throws IOException, InterruptedException {
         String cmd    = String.format(DURATION_COMMAND, m3u8Url);
-        String result = executeResult(cmd);
+        String result = executeResult(Config.getFfmpegDir() + File.separator + cmd);
         return new BigDecimal(result).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_EVEN).doubleValue();
     }
 

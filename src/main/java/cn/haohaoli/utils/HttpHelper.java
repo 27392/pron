@@ -106,12 +106,23 @@ public class HttpHelper {
         Response response = OkHttpClientHolder.INSTANCE.newCall(req).execute();
 
         if (response.isSuccessful()) {
-            ResponseBody body     = response.body();
-            String       text     = new String(body.bytes());
-            Document     document = Jsoup.parse(text);
-            return DocumentWrapper.of(document, DocumentWrapper.Type.REMOTE);
+            return Optional.ofNullable(getResult(response))
+                    .map(Jsoup::parse)
+                    .map(r -> DocumentWrapper.of(r, DocumentWrapper.Type.REMOTE)).orElseThrow(() -> new RuntimeException("结果为空"));
         } else {
-            throw new RuntimeException("url: " + url + ", code: " + response.code());
+            throw new RuntimeException("url: " + url + ", code: " + response.code() + ", msg: " + getResult(response));
+        }
+    }
+
+    public static String getResult(Response response) {
+        ResponseBody body = response.body();
+        if (body == null) {
+            return null;
+        }
+        try {
+            return new String(body.bytes());
+        } catch (IOException e) {
+            return null;
         }
     }
 

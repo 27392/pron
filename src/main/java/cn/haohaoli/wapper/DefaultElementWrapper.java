@@ -57,6 +57,7 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
                 .replace("[原创]", "")
                 .replaceAll("/", "")
                 .replaceAll(" - ", "")
+                .replaceAll("[“”]", "")
                 .trim();
     }
 

@@ -30,6 +30,10 @@ public class Config {
         return PROPERTIES.getProperty("downloadDir");
     }
 
+    public String getFfmpegDir() {
+        return PROPERTIES.getProperty("ffmpegDir");
+    }
+
     public int getMaxPage() {
         return Integer.parseInt(PROPERTIES.getProperty("maxPage", "1"));
     }
