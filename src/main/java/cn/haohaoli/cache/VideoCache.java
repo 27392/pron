@@ -37,9 +37,8 @@ public class VideoCache {
         }
     }
 
-    public String get(String name) {
-        String[] split = name.split(" - ");
-        return MAPPING.get(split[1] + VIDEO_SUFFIX);
+    public String get(String id) {
+        return MAPPING.get(id + VIDEO_SUFFIX);
     }
 
     public boolean delete(LocalDate releaseDate, String title) throws IOException {

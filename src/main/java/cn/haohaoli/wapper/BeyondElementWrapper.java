@@ -1,5 +1,6 @@
 package cn.haohaoli.wapper;
 
+import cn.haohaoli.utils.RegexUtils;
 import cn.haohaoli.utils.TaskUtils;
 import cn.haohaoli.beyond.Entry;
 import lombok.RequiredArgsConstructor;
@@ -10,10 +11,14 @@ import java.time.LocalDate;
 /**
  * @author lwh
  */
-@RequiredArgsConstructor
 public class BeyondElementWrapper extends AbstractElementWrapper {
 
     private final Entry entry;
+
+    public BeyondElementWrapper(Entry entry) {
+        super(RegexUtils.id(entry.getUrl()));
+        this.entry = entry;
+    }
 
     @Override
     public Element getElement() {

@@ -38,6 +38,10 @@ public class Config {
         return Integer.parseInt(PROPERTIES.getProperty("maxDuration", "25"));
     }
 
+    public int getBeyondMaxDuration() {
+        return Integer.parseInt(PROPERTIES.getProperty("beyondMaxDuration", "30"));
+    }
+
     public int getDownloadTimeout() {
         return Integer.parseInt(PROPERTIES.getProperty("downloadTimeout", "6"));
     }

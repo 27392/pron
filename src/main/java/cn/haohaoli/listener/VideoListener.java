@@ -18,11 +18,11 @@ public class VideoListener {
 
     @Subscribe
     public void downFail(VideoDownFailEvent event) {
-        String title = event.getWrapper().getTitle();
+        String    fileName    = event.getWrapper().getFieldName();
         LocalDate releaseDate = event.getWrapper().getReleaseDate();
         try {
-            boolean delete = VideoCache.delete(releaseDate, title);
-            log.info("删除视频: {}, {}", title, delete);
+            boolean delete = VideoCache.delete(releaseDate, fileName);
+            log.info("删除视频: {}, {}", fileName, delete);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -30,11 +30,11 @@ public class VideoListener {
 
     @Subscribe
     public void downTimeout(VideoDownTimeoutEvent event) {
-        String    title       = event.getWrapper().getTitle();
+        String    fileName    = event.getWrapper().getFieldName();
         LocalDate releaseDate = event.getWrapper().getReleaseDate();
         try {
-            boolean delete = VideoCache.delete(releaseDate, title);
-            log.info("删除视频: {}, {}", title, delete);
+            boolean delete = VideoCache.delete(releaseDate, fileName);
+            log.info("删除视频: {}, {}", fileName, delete);
         } catch (IOException e) {
             e.printStackTrace();
         }

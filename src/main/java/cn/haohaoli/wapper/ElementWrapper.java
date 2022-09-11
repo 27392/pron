@@ -3,14 +3,21 @@ package cn.haohaoli.wapper;
 import cn.haohaoli.cache.VideoCache;
 import org.jsoup.nodes.Element;
 
+import java.io.Closeable;
 import java.nio.file.Path;
 import java.time.LocalDate;
-
 
 /**
  * @author lwh
  */
-public interface ElementWrapper {
+public interface ElementWrapper extends Closeable {
+
+    /**
+     * 获取id
+     *
+     * @return
+     */
+    String getId();
 
     /**
      * 获取元素
@@ -76,6 +83,10 @@ public interface ElementWrapper {
      * @return
      */
     boolean exist();
+
+    default String getFieldName() {
+        return getTitle() + " - " + getId();
+    }
 
     default Path downDir() {
         LocalDate releaseDate = getReleaseDate();

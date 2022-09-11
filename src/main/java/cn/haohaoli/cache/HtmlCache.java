@@ -1,6 +1,7 @@
 package cn.haohaoli.cache;
 
 import cn.haohaoli.cmmon.Const;
+import cn.haohaoli.utils.FileUtils.FileSort;
 import cn.haohaoli.utils.RegexUtils;
 import cn.haohaoli.config.Config;
 import cn.haohaoli.utils.FileUtils;
@@ -38,7 +39,7 @@ public class HtmlCache {
             MAPPING.entrySet().removeIf((entry) -> {
                 File file = entry.getValue().file;
                 if (entry.getKey().contains(".php") && LocalDate.parse(file.getParentFile().getName()).isBefore(now)) {
-                    log.info("cache: 删除页面: {}", file.getName());
+                    log.debug("删除页面: {}", file.getName());
                     return FileUtils.delete(file);
                 }
                 return false;
@@ -84,7 +85,7 @@ public class HtmlCache {
         if (MAPPING.size() <= count) {
             return;
         }
-        File[] files = FileUtils.getFilesBySortCreate(CACHE_DIR.toFile());
+        File[] files = FileSort.NAME.getFiles(CACHE_DIR.toFile());
         if (Objects.isNull(files) || files.length == 0) {
             return;
         }
@@ -92,26 +93,26 @@ public class HtmlCache {
         int removeCount = MAPPING.size() - count;
         int delCount    = 0;
         for (File file : files) {
-            File[] fs = FileUtils.getFilesBySortCreate(file);
+            File[] fs = FileSort.CREATE_TIME_ASC.getFiles(file);
             if (file.isDirectory() && (fs != null && fs.length != 0)) {
                 int c = 0;
                 for (File f : fs) {
                     if (delCount >= removeCount) {
-                        log.info("cache: 删除数量: {}", delCount);
+                        log.info("删除Html缓存: {}", delCount);
                         return;
                     }
                     boolean delete = FileUtils.delete(f);
                     if (delete) {
                         MAPPING.remove(f.getName());
                     }
-                    log.info("cache: {}, delete: {}", f.getName(), delete);
+                    log.debug("{}, delete: {}", f.getAbsolutePath(), delete);
 
                     delCount++;
                     c++;
                 }
                 if (c == fs.length) {
                     boolean delete = FileUtils.delete(file);
-                    log.info("cache: {}, delete: {}", file.getName(), delete);
+                    log.debug("{}, delete: {}", file.getAbsolutePath(), delete);
                 }
             }
         }

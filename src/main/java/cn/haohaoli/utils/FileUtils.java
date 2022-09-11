@@ -28,9 +28,10 @@ public class FileUtils {
      * @param path
      * @param predicate
      * @param consumer
+     * @param sort
      */
-    public void scanFile(Path path, Predicate<File> predicate, Consumer<File> consumer) {
-        File[] files = getFilesBySortCreate(path.toFile());
+    public void scanFile(Path path, Predicate<File> predicate, Consumer<File> consumer, FileSort sort) {
+        File[] files = sort.getFiles(path.toFile());
         if (files == null) {
             return;
         }
@@ -39,7 +40,7 @@ public class FileUtils {
         while (!queue.isEmpty()) {
             File f = queue.removeLast();
             if (f.isDirectory()) {
-                File[] fs = getFilesBySortCreate(f);
+                File[] fs = sort.getFiles(f);
                 if (fs != null) {
                     for (File item : fs) {
                         queue.push(item);
@@ -51,6 +52,10 @@ public class FileUtils {
                 }
             }
         }
+    }
+
+    public void scanFile(Path path, Predicate<File> predicate, Consumer<File> consumer) {
+        scanFile(path, predicate, consumer, FileSort.NONE);
     }
 
     /**
@@ -119,6 +124,28 @@ public class FileUtils {
         writer(file, append, (w) -> w.println(context));
     }
 
+    public void writer(File file, boolean append, Collection<?> contexts) throws IOException {
+        writer(file, append, (w) -> {
+            for (Object context : contexts) {
+                w.println(context);
+            }
+        });
+    }
+
+    /**
+     * 获取属性
+     *
+     * @param file
+     * @return
+     */
+    public BasicFileAttributes getAttributes(File file) {
+        try {
+            return Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * 获取创建时间
      *
@@ -127,26 +154,11 @@ public class FileUtils {
      */
     public long getCreateTime(File file) {
         try {
-            BasicFileAttributes basicFileAttributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
-            return basicFileAttributes.creationTime().toMillis();
-        } catch (IOException e) {
+            return getAttributes(file).creationTime().toMillis();
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return 0;
-    }
-
-    /**
-     * 获取文件下所有文件(按照创建时间排序)
-     *
-     * @param file
-     * @return
-     */
-    public File[] getFilesBySortCreate(File file) {
-        File[] files = file.listFiles();
-        if (files != null) {
-            Arrays.sort(files, (f1, f2) -> (int) (getCreateTime(f2) - getCreateTime(f1)));
-        }
-        return files;
     }
 
     /**
@@ -160,8 +172,29 @@ public class FileUtils {
         if (file.isFile()) {
             return file;
         }
-        Path file1 = Files.createFile(file.toPath());
-        return file1.toFile();
+        Path path = Files.createFile(file.toPath());
+        return path.toFile();
+    }
+
+    /**
+     * 如果存在则删除重新创建
+     *
+     * @param del
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public File create(boolean del, File file) throws IOException {
+        if (file.isFile() && del) {
+            delete(file);
+        }
+        Path path = Files.createFile(file.toPath());
+        return path.toFile();
+    }
+
+    public void renameTo(File scr, File dest) {
+        delete(dest);
+        boolean b = scr.renameTo(dest);
     }
 
     /**
@@ -178,5 +211,47 @@ public class FileUtils {
             return false;
         }
         return true;
+    }
+
+    public enum FileSort {
+
+        CREATE_TIME_ASC {
+            @Override
+            public File[] getFiles(File file) {
+                File[] files = file.listFiles();
+                if (files != null) {
+                    Arrays.sort(files, (f1, f2) -> (int) (getCreateTime(f1) - getCreateTime(f2)));
+                }
+                return files;
+            }
+        },
+        CREATE_TIME_DESC {
+            @Override
+            public File[] getFiles(File file) {
+                File[] files = file.listFiles();
+                if (files != null) {
+                    Arrays.sort(files, (f1, f2) -> (int) (getCreateTime(f2) - getCreateTime(f1)));
+                }
+                return files;
+            }
+        },
+        NONE {
+            @Override
+            public File[] getFiles(File file) {
+                return file.listFiles();
+            }
+        },
+        NAME {
+            @Override
+            public File[] getFiles(File file) {
+                File[] files = file.listFiles();
+                if (files != null) {
+                    Arrays.sort(files, Comparator.comparing(File::getName));
+                }
+                return files;
+            }
+        };
+
+        public abstract File[] getFiles(File file);
     }
 }

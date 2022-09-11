@@ -3,6 +3,7 @@ package cn.haohaoli.report;
 import cn.haohaoli.utils.TaskUtils;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -16,7 +17,7 @@ import static cn.haohaoli.cmmon.Const.PAGE;
 @Slf4j
 public class Report {
 
-    private static final LocalDateTime now       = LocalDateTime.now();
+    private static final LocalDateTime start     = LocalDateTime.now();
     private static final AtomicInteger httpCount = new AtomicInteger();
 
     private static final Map<String, State> report = Collections.synchronizedMap(new StateMap());
@@ -119,9 +120,10 @@ public class Report {
                 state.getDownTimeBeyond().addAndGet(v.getDownTimeBeyond().get());
             }
         });
+        Duration      between       = Duration.between(start, LocalDateTime.now());
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("网络请数量: ").append(httpCount.get())
-                .append(", 耗时: ").append(now).append(", 结束 ").append(LocalDateTime.now());
+                .append(", 耗时: ").append(between.getSeconds()).append("秒");
         map.forEach((k, v) -> {
             stringBuilder.append("\n")
                     .append("url ").append("[").append(k).append("]")

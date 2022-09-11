@@ -1,14 +1,13 @@
 package cn.haohaoli.core;
 
-import cn.haohaoli.config.Config;
 import cn.haohaoli.event.*;
 import cn.haohaoli.component.EventPublisher;
+import cn.haohaoli.filter.Filter;
 import cn.haohaoli.utils.ProcessUtils;
 import cn.haohaoli.wapper.ElementWrapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.concurrent.*;
 
@@ -21,78 +20,59 @@ public class Downloader implements Runnable {
 
     private final BlockingQueue<ElementWrapper> queue;
 
+    private final Filter filter;
+
     @Override
     public void run() {
         log.info("开始");
-
         try {
             while (true) {
-                ElementWrapper element = queue.poll(30, TimeUnit.SECONDS);
-                if (element == null) {
-                    break;
-                }
-
-                String title = element.getTitle();
-                log.info("处理: {}", title);
-
-                if (element.exist()) {
-                    log.info("跳过: {}", title);
-                    EventPublisher.publish(new VideoSkipEvent(element));
-                    continue;
-                }
-                double duration = element.getDuration();
-                if (duration > Config.getMaxDuration()) {
-                    log.info("时间超长 {} 分钟: [{}]", duration, title);
-                    EventPublisher.publish(new VideoDurationLongEvent(element));
-                    continue;
-                }
-
-                String    url         = element.getUrl();
-                LocalDate releaseDate = element.getReleaseDate();
-                if (Config.getLastTime().isAfter(releaseDate)) {
-                    log.info("时间超出: 发布时间: [{}], 规定时间: [{}], 名称: [{}], 来源: [{}], 地址: [{}]", releaseDate, Config.getLastTime(), title, element.getSourceUrl(), url);
-                    EventPublisher.publish(new VideoExpiredEvent(element));
-                    continue;
-                }
-
-                Path path    = element.downDir();
-                long timeout = element.timeout();
-                long start   = System.currentTimeMillis();
-                log.info("开始下载: 发布时间: [{}], [超时: {} / 总时长: {}], 名称: [{}], 来源: [{}], 地址: [{}]", releaseDate, timeout, duration, title, element.getSourceUrl(), url);
-
-                String m3u8Src = element.getRealUrl();
-                if (m3u8Src == null) {
-                    log.debug("跳过: {}", title);
-                    EventPublisher.publish(new VideoSkipEvent(element));
-                }
-
-                FutureTask<Integer> integerFutureTask = new FutureTask<>(() -> ProcessUtils.outputToMp4(path, title, m3u8Src));
-                Thread              thread            = new Thread(integerFutureTask, "down-");
-                thread.start();
-
-                try {
-                    Integer i = integerFutureTask.get(element.timeout(), TimeUnit.MINUTES);
-                    if (i == 0) {
-                        log.info("下载完成: 耗时: [{}], 发布时间: [{}], 名称: [{}], 地址: [{}]", watch(start), releaseDate, title, url);
-                        EventPublisher.publish(new VideoDownSuccessEvent(element));
-                    } else {
-                        log.error("下载失败: 耗时: [{}], 发布时间: [{}], 名称 [{}], 地址: [{}]", watch(start), releaseDate, title, url);
-                        EventPublisher.publish(new VideoDownFailEvent(element));
+                try (ElementWrapper element = queue.poll(30, TimeUnit.SECONDS)) {
+                    if (element == null) {
+                        return;
                     }
-                } catch (TimeoutException e) {
-                    EventPublisher.publish(new VideoDownTimeoutEvent(element));
-                    log.error("下载超时删除: 耗时: [{}], 名称: [{}], 地址: [{}]", watch(start), title, url);
-                } catch (Exception e) {
-                    log.error("下载失败", e);
-                    EventPublisher.publish(new VideoDownFailEvent(element));
+                    if (!filter.apply(element)) {
+                        continue;
+                    }
+                    download(element);
                 }
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+        } finally {
+            log.info("Download -> 退出");
+            EventPublisher.publish(new DownloaderFinishEvent());
         }
+    }
 
-        log.info("Download -> 退出");
-        EventPublisher.publish(new DownloaderFinishEvent());
+    private void download(ElementWrapper element) {
+        long start = System.currentTimeMillis();
+
+        String title   = element.getTitle();
+        String url     = element.getUrl();
+        long   timeout = element.timeout();
+
+        log.info("开始下载: [超时: {}], 名称: [{}], 来源: [{}], 地址: [{}]", timeout, title, element.getSourceUrl(), url);
+        FutureTask<Integer> integerFutureTask = new FutureTask<>(() -> ProcessUtils.outputToMp4(element.downDir(), element.getFieldName(), element.getRealUrl()));
+        Thread              thread            = new Thread(integerFutureTask, "down-");
+        thread.start();
+
+        try {
+            Integer i = integerFutureTask.get(timeout, TimeUnit.MINUTES);
+            if (i == 0) {
+                log.info("下载完成: 耗时: [{}], 名称: [{}], 地址: [{}]", watch(start), title, url);
+                EventPublisher.publish(new VideoDownSuccessEvent(element));
+            } else {
+                log.error("下载失败: 耗时: [{}], 名称 [{}], 地址: [{}]", watch(start), title, url);
+                EventPublisher.publish(new VideoDownFailEvent(element));
+            }
+        } catch (TimeoutException e) {
+            EventPublisher.publish(new VideoDownTimeoutEvent(element));
+            log.error("下载超时删除: 耗时: [{}], 名称: [{}], 地址: [{}]", watch(start), title, url);
+        } catch (Exception e) {
+            log.error("下载失败", e);
+            EventPublisher.publish(new VideoDownFailEvent(element));
+        }
     }
 
     /**

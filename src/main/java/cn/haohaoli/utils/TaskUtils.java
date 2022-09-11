@@ -1,8 +1,10 @@
 package cn.haohaoli.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -19,8 +21,8 @@ public class TaskUtils {
     private static final int           cpuCores;
 
     static {
-        cpuCores = Runtime.getRuntime().availableProcessors();
         AtomicInteger counter = new AtomicInteger();
+        cpuCores = Runtime.getRuntime().availableProcessors();
 
         threadPoolExecutor = new ThreadPoolExecutor(
                 0,
@@ -32,14 +34,9 @@ public class TaskUtils {
                     @Override
                     public Thread newThread(@NotNull Runnable r) {
                         Thread thread = new Thread(r);
-                        thread.setName("91-" + counter.incrementAndGet());
+                        thread.setName("91-" + StringUtils.rightPad(Objects.toString(counter.incrementAndGet()), 2));
                         thread.setDaemon(false);
-                        thread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-                            @Override
-                            public void uncaughtException(Thread t, Throwable e) {
-                                log.error(e.getMessage(), e);
-                            }
-                        });
+                        thread.setUncaughtExceptionHandler((t, e) -> log.error(e.getMessage(), e));
                         return thread;
                     }
                 }, new ThreadPoolExecutor.AbortPolicy());

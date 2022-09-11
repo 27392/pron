@@ -2,10 +2,11 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %0.15logger [%X{id:- }] [%X{releaseDate:- }] [%X{duration}] - %msg%n </pattern>
         </encoder>
     </appender>
 
+    <logger name="cn.haohaoli.core.PageResolve" level="WARN"/>
 
     <root level="info">
         <appender-ref ref="STDOUT" />

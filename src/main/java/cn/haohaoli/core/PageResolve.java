@@ -1,9 +1,10 @@
 package cn.haohaoli.core;
 
 import cn.haohaoli.config.Config;
+import cn.haohaoli.event.PagePutEvent;
 import cn.haohaoli.event.PageResolveFinishEvent;
 import cn.haohaoli.component.EventPublisher;
-import cn.haohaoli.report.Report;
+import cn.haohaoli.proxy.ElementWrapperProxy;
 import cn.haohaoli.utils.HttpHelper;
 import cn.haohaoli.wapper.DocumentWrapper;
 import cn.haohaoli.wapper.DefaultElementWrapper;
@@ -13,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
@@ -64,18 +66,16 @@ public class PageResolve implements Runnable {
             Document doc;
             while ((doc = nextPage()) != null) {
                 log.info("{}, 当前页: {}", currentUrl, currentPage);
+                Elements elements = getElements(doc);
+                for (Element element : elements) {
+                    try {
+                        ElementWrapper wrapper = put(new DefaultElementWrapper(element, currentUrl));
+                        log.info("put: 第{}页, {}", currentPage, wrapper.getTitle());
 
-                Elements select = doc.select("#wrapper > div.container > .row > div > .row > div");
-                for (Element element : select) {
-                    queue.put(new DefaultElementWrapper(element, currentUrl));
-                    Report.produce(currentUrl);
-
-                    String href = element.select(".videos-text-align > a").attr("href");
-                    if ("".equals(href)) {
-                        href = element.select(".well > a").attr("href");
+                        EventPublisher.publish(new PagePutEvent(wrapper));
+                    } finally {
+                        MDC.clear();
                     }
-                    String title = element.select(".video-title").html().replace("[原创]", "").trim();
-                    log.debug("put: {}, {}, {}", currentPage, title, href);
                 }
                 log.info("{}, 第{}页, 完成", currentUrl, currentPage);
             }
@@ -139,5 +139,15 @@ public class PageResolve implements Runnable {
             // 刷新标识
             this.refreshMaxPage = true;
         }
+    }
+
+    private ElementWrapper put(ElementWrapper wrapper) throws InterruptedException {
+        ElementWrapper wrapperProxy = ElementWrapperProxy.create(wrapper);
+        queue.put(wrapperProxy);
+        return wrapperProxy;
+    }
+
+    private Elements getElements(Document doc) {
+        return doc.select("#wrapper > div.container > .row > div > .row > div");
     }
 }

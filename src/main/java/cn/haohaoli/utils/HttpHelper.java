@@ -32,7 +32,6 @@ public class HttpHelper {
 
     private static final HashMap<String, List<Cookie>> COOKIE_STORE = new HashMap<>();
 
-
     static {
         try {
             String[] split = Config.getProxy().split(":");
@@ -60,7 +59,7 @@ public class HttpHelper {
                 break;
             } catch (Exception e) {
                 ex = e;
-                log.info("重试: {},{}", url, i);
+                log.info("重试: [{}], [第{}次], [{}]", url, i, e.getMessage());
             }
         }
         if (wrapper != null) {

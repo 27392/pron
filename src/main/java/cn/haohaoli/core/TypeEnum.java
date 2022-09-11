@@ -1,6 +1,10 @@
 package cn.haohaoli.core;
 
 import cn.haohaoli.beyond.Beyond;
+import cn.haohaoli.component.EventPublisher;
+import cn.haohaoli.event.CloseEvent;
+import cn.haohaoli.filter.FilterExecutor;
+import cn.haohaoli.proxy.ElementWrapperProxy;
 import cn.haohaoli.report.Report;
 import cn.haohaoli.utils.TaskUtils;
 import cn.haohaoli.beyond.Entry;
@@ -98,9 +102,9 @@ public enum TypeEnum {
 
                 while (iterator.hasPrevious()) {
                     try {
-                        BeyondElementWrapper beyondElementWrapper = new BeyondElementWrapper(iterator.previous());
-                        queue.put(beyondElementWrapper);
-                        Report.produce(beyondElementWrapper.getSourceUrl());
+                        ElementWrapper wrapper = ElementWrapperProxy.create(new BeyondElementWrapper(iterator.previous()));
+                        queue.put(wrapper);
+                        Report.produce(wrapper.getSourceUrl());
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -121,24 +125,27 @@ public enum TypeEnum {
 
     public int startDown(BlockingQueue<ElementWrapper> queue, int size) throws IOException, URISyntaxException {
         for (int i = 0; i < size; i++) {
-            TaskUtils.submit(new Downloader(queue));
+            TaskUtils.submit(new Downloader(queue, FilterExecutor.getInstance()));
         }
         return size;
     }
 
     public void start(BlockingQueue<ElementWrapper> queue, int size) throws IOException, URISyntaxException, InterruptedException {
         int pageCount = this.startPage(queue);
+
+        TimeUnit.SECONDS.sleep(3);
         int downCount = this.startDown(queue, size);
 
         while (true) {
-            TimeUnit.SECONDS.sleep(10);
+            TimeUnit.SECONDS.sleep(2);
             if (TaskUtils.finishCount.get() == (downCount + pageCount)) {
                 log.info("{}", Report.print());
-                TaskUtils.shutdown();
+                EventPublisher.publish(new CloseEvent());
                 break;
             }
         }
     }
+
     /**
      * 获取最大页码
      *
