@@ -30,18 +30,6 @@ public abstract class AbstractElementWrapper implements ElementWrapper {
     }
 
     @Override
-    public double getDuration() throws Exception {
-        String url   = this.getUrl();
-        Entry  entry = Beyond.get(url);
-
-        if (entry != null) {
-            return entry.getTime();
-        }
-        String realUrl = this.getRealUrl();
-        return duration(realUrl);
-    }
-
-    @Override
     public long timeout() {
         return Config.getDownloadTimeout();
     }
@@ -50,10 +38,6 @@ public abstract class AbstractElementWrapper implements ElementWrapper {
     public boolean exist() {
         String path = VideoCache.get(getId());
         return path != null;
-    }
-
-    protected double duration(String m3u8Url) throws IOException, InterruptedException {
-        return ProcessUtils.duration(m3u8Url);
     }
 
     @Override

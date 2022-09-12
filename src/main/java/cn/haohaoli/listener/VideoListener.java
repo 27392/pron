@@ -1,6 +1,8 @@
 package cn.haohaoli.listener;
 
+import cn.haohaoli.cache.HtmlCache;
 import cn.haohaoli.cache.VideoCache;
+import cn.haohaoli.event.VideoDownSuccessEvent;
 import com.google.common.eventbus.Subscribe;
 import cn.haohaoli.event.VideoDownFailEvent;
 import cn.haohaoli.event.VideoDownTimeoutEvent;
@@ -38,5 +40,10 @@ public class VideoListener {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Subscribe
+    public void downSuccess(VideoDownSuccessEvent event) {
+        VideoCache.add(event.getWrapper());
     }
 }

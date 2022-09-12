@@ -19,6 +19,8 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.*;
 
+import static cn.haohaoli.cmmon.Const.PAGE;
+
 /**
  * @author lwh
  */
@@ -38,7 +40,7 @@ public class HtmlCache {
             LocalDate now = LocalDate.now();
             MAPPING.entrySet().removeIf((entry) -> {
                 File file = entry.getValue().file;
-                if (entry.getKey().contains(".php") && LocalDate.parse(file.getParentFile().getName()).isBefore(now)) {
+                if (entry.getKey().contains(PAGE) && LocalDate.parse(file.getParentFile().getName()).isBefore(now)) {
                     log.debug("删除页面: {}", file.getName());
                     return FileUtils.delete(file);
                 }
@@ -50,7 +52,7 @@ public class HtmlCache {
             // 清理缓存
             clear(Config.getMaxHtmlCache());
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
@@ -71,6 +73,22 @@ public class HtmlCache {
         FileUtils.writer(file, false, content);
 
         MAPPING.put(cacheKey, new Value(file, content));
+    }
+
+    /**
+     * 删除缓存
+     *
+     * @param url
+     */
+    public boolean delete(String url) {
+        boolean bol      = false;
+        String  cacheKey = getCacheKey(url);
+        Value   value    = MAPPING.get(cacheKey);
+        if (value != null) {
+            bol = FileUtils.delete(value.file);
+            MAPPING.remove(cacheKey);
+        }
+        return bol;
     }
 
     /**
@@ -150,7 +168,7 @@ public class HtmlCache {
         String replace = url.replace(Const.HOST, "");
         if (replace.startsWith("view_video.php")) {
             replace = RegexUtils.id(replace);
-        }else {
+        } else {
             int i = replace.indexOf("?");
             replace = replace.substring(i + 1);
         }

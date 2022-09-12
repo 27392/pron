@@ -16,7 +16,7 @@ public class CacheExistFilter implements Filter {
     public boolean apply(ElementWrapper wrapper) {
         String title = wrapper.getTitle();
         if (wrapper.exist()) {
-            log.info("存在跳过: {}, {}", title, VideoCache.get(wrapper.getId()));
+            log.info("存在跳过: {}", title);
             EventPublisher.publish(new VideoSkipEvent(wrapper));
             return false;
         }

@@ -5,12 +5,11 @@ import cn.haohaoli.cache.HtmlCache;
 import cn.haohaoli.component.EventPublisher;
 import cn.haohaoli.event.HttpSuccessEvent;
 import cn.haohaoli.wapper.DocumentWrapper;
-import cn.haohaoli.report.Report;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -91,7 +90,6 @@ public class HttpHelper {
     }
 
     public static DocumentWrapper doHttp(String url) throws IOException, InterruptedException {
-        Report.httpRequest();
         log.debug("get for http: {}", url);
 
         TimeUnit.SECONDS.sleep(3);
@@ -108,6 +106,7 @@ public class HttpHelper {
         if (response.isSuccessful()) {
             return Optional.ofNullable(getResult(response))
                     .map(Jsoup::parse)
+                    .filter(r-> StringUtils.isNoneBlank(r.text()))
                     .map(r -> DocumentWrapper.of(r, DocumentWrapper.Type.REMOTE)).orElseThrow(() -> new RuntimeException("结果为空"));
         } else {
             throw new RuntimeException("url: " + url + ", code: " + response.code() + ", msg: " + getResult(response));

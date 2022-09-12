@@ -3,11 +3,11 @@ package cn.haohaoli.cache;
 import cn.haohaoli.cmmon.Const;
 import cn.haohaoli.config.Config;
 import cn.haohaoli.utils.FileUtils;
+import cn.haohaoli.wapper.ElementWrapper;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -28,27 +28,22 @@ public class VideoCache {
 
     static {
         try {
-            Files.createDirectories(Paths.get(Config.getDownloadDir()));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    static {
-        try {
             FileUtils.scanFile(CACHE_DIR, f -> f.getName().endsWith(VIDEO_SUFFIX), f -> {
                 String[] split = f.getName().split(" - ");
                 MAPPING.put(split[1], f.getAbsolutePath());
             });
             log.info("找到视频文件: {}", MAPPING.size());
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
-
     public String get(String id) {
         return MAPPING.get(id + VIDEO_SUFFIX);
+    }
+
+    public void add(ElementWrapper wrapper) {
+        MAPPING.put(wrapper.getId() + VIDEO_SUFFIX, wrapper.downDir().resolve(wrapper.getFieldName() + VIDEO_SUFFIX).toString());
     }
 
     public boolean delete(LocalDate releaseDate, String title) throws IOException {

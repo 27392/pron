@@ -4,6 +4,7 @@ import cn.haohaoli.cmmon.Const;
 import cn.haohaoli.config.Config;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -13,7 +14,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.MessageFormat;
+import java.util.function.BiFunction;
 
 import static cn.haohaoli.cmmon.Const.*;
 
@@ -24,11 +25,9 @@ import static cn.haohaoli.cmmon.Const.*;
 @UtilityClass
 public class ProcessUtils {
 
-    private static final String PROXY_STR;
+    private static final String OS_NAME = System.getProperties().getProperty(OS);
 
-    static {
-        PROXY_STR = MessageFormat.format(PROXY, Config.getProxy());
-    }
+    private static final BiFunction<String, String, String> f = (c, s) -> StringUtils.isBlank(Config.getProxyCommand()) ? c : Config.getProxyCommand() + s + c;
 
     /**
      * 执行命令
@@ -39,19 +38,20 @@ public class ProcessUtils {
      * @throws IOException
      */
     public Process doExecute(String command) throws InterruptedException, IOException {
-
         ProcessBuilder builder;
-        String         osName = System.getProperties().getProperty("os.name");
-        if (osName.equals("Windows")) {
-            builder = new ProcessBuilder("cmd.exe", "/c", command);
-        } else {
-            builder = new ProcessBuilder("/bin/sh", "-c", command);
-        }
 
+        if (OS_NAME.contains(WINDOWS_OS)) {
+            builder = new ProcessBuilder("cmd.exe", "/c", f.apply(command, WINDOWS_PROXY_JOIN));
+        } else {
+            builder = new ProcessBuilder("/bin/sh", "-c", f.apply(command, MAC_PROXY_JOIN));
+        }
+        builder.redirectErrorStream(true);
+
+        log.debug("command: {}", builder.command());
         Process p = builder.start();
         int     i = p.waitFor();
         if (i != 0) {
-            log.warn("cmd: {}, result: {}", command, getResult(p));
+            log.warn("result: {}", getResult(p));
         }
         return p;
     }

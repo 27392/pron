@@ -2,7 +2,9 @@ package cn.haohaoli.wapper;
 
 import cn.haohaoli.beyond.Beyond;
 import cn.haohaoli.beyond.Entry;
+import cn.haohaoli.cache.VideoCache;
 import cn.haohaoli.utils.HttpHelper;
+import cn.haohaoli.utils.ProcessUtils;
 import cn.haohaoli.utils.RegexUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -55,9 +57,8 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
     public String getTitle() {
         return element.select(".video-title").html()
                 .replace("[原创]", "")
-                .replaceAll("/", "")
+                .replaceAll("[“”/]", "")
                 .replaceAll(" - ", "")
-                .replaceAll("[“”]", "")
                 .trim();
     }
 
@@ -69,6 +70,9 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
         Entry entry = Beyond.get(url);
         if (entry != null) {
             this.releaseDate = entry.getReleaseDate();
+        }
+        if (exist()) {
+            this.releaseDate = LocalDate.parse(RegexUtils.videoDate(VideoCache.get(getId())));
         }
         if (this.releaseDate == null) {
             try {
@@ -107,21 +111,26 @@ public class DefaultElementWrapper extends AbstractElementWrapper {
     }
 
     @Override
-    protected double duration(String m3u8Url) throws IOException, InterruptedException {
-        try {
-            String text   = element.select(".duration").text();
-            int    length = text.split(":").length;
-            if (length == 2) {
-                text = "00:" + text;
-            } else if (length == 1) {
-                text = "00:00" + text;
-            }
-            LocalTime parse = LocalTime.parse(text);
-            return Math.max(parse.getMinute(), 1);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return super.duration(m3u8Url);
+    public double getDuration() throws Exception {
+        String url   = this.getUrl();
+        Entry  entry = Beyond.get(url);
+
+        if (entry != null) {
+            return entry.getTime();
         }
+        if (exist()) {
+            return ProcessUtils.duration(VideoCache.get(getId()));
+        }
+
+        String text   = element.select(".duration").text();
+        int    length = text.split(":").length;
+        if (length == 2) {
+            text = "00:" + text;
+        } else if (length == 1) {
+            text = "00:00" + text;
+        }
+        LocalTime parse = LocalTime.parse(text);
+        return Math.max(parse.getMinute(), 1);
     }
 
 }

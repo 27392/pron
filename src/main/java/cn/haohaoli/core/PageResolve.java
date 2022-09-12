@@ -104,7 +104,7 @@ public class PageResolve implements Runnable {
             } else {
                 currentUrl = type.getUrl() + PAGE + currentPage.incrementAndGet();
             }
-            DocumentWrapper documentWrapper = HttpHelper.http(currentUrl);
+            DocumentWrapper documentWrapper = HttpHelper.httpForCache(currentUrl);
             if (documentWrapper.getType() == DocumentWrapper.Type.REMOTE && currentPage.get() != 1) {
                 TimeUnit.SECONDS.sleep(20);
             }

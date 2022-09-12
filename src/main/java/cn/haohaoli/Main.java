@@ -2,10 +2,7 @@ package cn.haohaoli;
 
 import cn.haohaoli.config.Config;
 import cn.haohaoli.core.TypeEnum;
-import cn.haohaoli.listener.BeyondListener;
-import cn.haohaoli.listener.ReportListener;
-import cn.haohaoli.listener.TaskListener;
-import cn.haohaoli.listener.VideoListener;
+import cn.haohaoli.listener.*;
 import cn.haohaoli.component.EventPublisher;
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,8 +22,10 @@ public class Main {
         EventPublisher.register(new VideoListener());
         EventPublisher.register(new TaskListener());
         EventPublisher.register(new BeyondListener());
+        EventPublisher.register(new HtmlListener());
 
         try {
+            Class.forName("cn.haohaoli.config.Config");
             Class.forName("cn.haohaoli.cache.HtmlCache");
             Class.forName("cn.haohaoli.cache.VideoCache");
             Class.forName("cn.haohaoli.beyond.Beyond");

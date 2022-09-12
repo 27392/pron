@@ -35,7 +35,7 @@ public class Beyond {
         try {
             map = FileUtils.read(FileUtils.getOrCreate(PATH.toFile()), r -> Entry.of(r.split(Const.BEYOND_SEPARATOR)), Collectors.toMap(Entry::getUrl, r -> r, (o1, o2) -> o1, LinkedHashMap::new));
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
 
         log.info("找到超长视频: {}", map.size());
