@@ -50,20 +50,17 @@ public class Downloader implements Runnable {
 
         String title   = element.getTitle();
         String url     = element.getUrl();
-        long   timeout = element.timeout();
+        int   timeout = (int) element.timeout();
 
         log.info("开始下载: [超时: {}], 名称: [{}], 来源: [{}], 地址: [{}]", timeout, title, element.getSourceUrl(), url);
-        FutureTask<Integer> integerFutureTask = new FutureTask<>(() -> ProcessUtils.outputToMp4(element.downDir(), element.getFieldName(), element.getRealUrl()));
-        Thread              thread            = new Thread(integerFutureTask, "down-");
-        thread.start();
 
         try {
-            Integer i = integerFutureTask.get(timeout, TimeUnit.MINUTES);
-            if (i == 0) {
+            ProcessUtils.Result result = ProcessUtils.outputToMp4(timeout, element.downDir(), element.getFieldName(), element.getRealUrl());
+            if (result.getCode() == 0) {
                 log.info("下载完成: 耗时: [{}], 名称: [{}], 地址: [{}]", watch(start), title, url);
                 EventPublisher.publish(new VideoDownSuccessEvent(element));
             } else {
-                log.error("下载失败: 耗时: [{}], 名称 [{}], 地址: [{}]", watch(start), title, url);
+                log.error("下载失败: 耗时: [{}], 名称: [{}], 信息: [{}], 地址: [{}]", watch(start), title, result.getMsg(), url);
                 EventPublisher.publish(new VideoDownFailEvent(element));
             }
         } catch (TimeoutException e) {

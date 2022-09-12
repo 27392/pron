@@ -2,19 +2,19 @@ package cn.haohaoli.utils;
 
 import cn.haohaoli.cmmon.Const;
 import cn.haohaoli.config.Config;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.function.BiFunction;
+import java.util.concurrent.TimeUnit;
 
 import static cn.haohaoli.cmmon.Const.*;
 
@@ -27,45 +27,54 @@ public class ProcessUtils {
 
     private static final String OS_NAME = System.getProperties().getProperty(OS);
 
-    private static final BiFunction<String, String, String> f = (c, s) -> StringUtils.isBlank(Config.getProxyCommand()) ? c : Config.getProxyCommand() + s + c;
-
     /**
      * 执行命令
      *
+     * @param timeout
      * @param command
      * @return
      * @throws InterruptedException
      * @throws IOException
      */
-    public Process doExecute(String command) throws InterruptedException, IOException {
+    public Result doExecute(int timeout, String command) throws InterruptedException, IOException {
         ProcessBuilder builder;
 
         if (OS_NAME.contains(WINDOWS_OS)) {
-            builder = new ProcessBuilder("cmd.exe", "/c", f.apply(command, WINDOWS_PROXY_JOIN));
+            builder = new ProcessBuilder("cmd.exe", "/c", command);
         } else {
-            builder = new ProcessBuilder("/bin/sh", "-c", f.apply(command, MAC_PROXY_JOIN));
+            builder = new ProcessBuilder("/bin/sh", "-c", command);
         }
         builder.redirectErrorStream(true);
 
         log.debug("command: {}", builder.command());
         Process p = builder.start();
-        int     i = p.waitFor();
-        if (i != 0) {
-            log.warn("result: {}", getResult(p));
+        if (timeout <= 0) {
+            return Result.of(p.waitFor(), getResult(p));
+        } else {
+            if (p.waitFor(timeout, TimeUnit.MINUTES)) {
+                return Result.of(p.waitFor(), getResult(p));
+            } else {
+                try {
+                    return Result.of(-1, getResult(p));
+                } finally {
+                    p.destroyForcibly();
+                }
+            }
+
         }
-        return p;
     }
 
     /**
      * 执行命令
      *
+     * @param timeout
      * @param command
      * @return
      * @throws InterruptedException
      * @throws IOException
      */
-    public int execute(String command) throws InterruptedException, IOException {
-        return doExecute(command).waitFor();
+    public Result execute(int timeout, String command) throws InterruptedException, IOException {
+        return doExecute(timeout, command);
     }
 
     /**
@@ -77,13 +86,13 @@ public class ProcessUtils {
      * @throws IOException
      */
     public String executeResult(String command) throws InterruptedException, IOException {
-        Process process = doExecute(command);
-        return getResult(process);
+        return doExecute(0, command).msg;
     }
 
     /**
      * 下载mp4
      *
+     * @param timeout
      * @param dir
      * @param name
      * @param m3u8Url
@@ -91,10 +100,10 @@ public class ProcessUtils {
      * @throws IOException
      * @throws InterruptedException
      */
-    public int outputToMp4(Path dir, String name, String m3u8Url) throws IOException, InterruptedException {
+    public Result outputToMp4(int timeout, Path dir, String name, String m3u8Url) throws IOException, InterruptedException {
         Path   directories = Files.createDirectories(dir).resolve(name + Const.VIDEO_SUFFIX);
         String cmd         = String.format(OUTPUT_MP4_COMMAND, m3u8Url, directories.toString());
-        return execute(Config.getFfmpegDir() + File.separator + cmd);
+        return execute(timeout, Config.getFfmpegDir() + "/" + cmd);
     }
 
     /**
@@ -107,7 +116,7 @@ public class ProcessUtils {
      */
     public double duration(String m3u8Url) throws IOException, InterruptedException {
         String cmd    = String.format(DURATION_COMMAND, m3u8Url);
-        String result = executeResult(Config.getFfmpegDir() + File.separator + cmd);
+        String result = executeResult(Config.getFfmpegDir() + "/" + cmd);
         return new BigDecimal(result).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_EVEN).doubleValue();
     }
 
@@ -129,5 +138,12 @@ public class ProcessUtils {
         return sb.toString();
     }
 
+    @Getter
+    @AllArgsConstructor(staticName = "of")
+    public static class Result {
+
+        private final int    code;
+        private final String msg;
+    }
 
 }
